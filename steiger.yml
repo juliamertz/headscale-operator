@@ -1,0 +1,20 @@
+build:
+  services:
+    type: nix
+    forceHostPlatform: true
+    packages:
+      headscale-operator: image
+
+profiles:
+  local:
+    env: local
+
+deploy:
+  headscale-operator:
+    type: helm
+    path: helm
+    namespace: headscale
+    valuesFiles:
+      - helm/values.yaml
+
+insecureRegistries: []
