@@ -1,0 +1,21 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: headscale-operator
+rules:
+  - apiGroups: ["kubus.io"]
+    resources: ["headscales"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+  - apiGroups: ["kubus.io"]
+    resources: ["headscales/status"]
+    verbs: ["get", "patch", "update"]
+  - apiGroups: ["kubus.io"]
+    resources: ["headscales/finalizers"]
+    verbs: ["update"]
+  - apiGroups: ["headscale.io"]
+    resources: ["certificates"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]

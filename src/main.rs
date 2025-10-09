@@ -164,7 +164,7 @@ async fn deploy_headscale(
     let keys_volume = Volume::secret("keys", SecretVolumeSource::secret_name(&keys_secret_name));
     let tls_volume = Volume::secret(
         "tls",
-        // TODO: proper integration for cert-manager
+        // TODO: proper integration for headscale
         SecretVolumeSource::secret_name(
             &headscale
                 .spec

@@ -1,11 +1,11 @@
-apiVersion: cert-manager.io/v1
+apiVersion: headscale.io/v1
 kind: Certificate
 metadata:
   name: headscale-tls
-  namespace: headscale
+  namespace: headscale-operator
 spec:
   dnsNames:
-    - headscale.juliamertz.nl
+    - headscale.domain.com
   secretName: headscale-tls
   issuerRef:
     kind: ClusterIssuer
@@ -16,7 +16,7 @@ apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
   name: headscale-db
-  namespace: headscale
+  namespace: headscale-operator
 spec:
   instances: 1
   primaryUpdateStrategy: unsupervised
@@ -29,13 +29,13 @@ apiVersion: kubus.io/v1
 kind: Headscale
 metadata:
   name: example
-  namespace: headscale
+  namespace: headscale-operator
 spec:
   tls:
     existingSecret: headscale-tls
 
   config:
-    server_url: https://headscale.juliamertz.nl:30443
+    server_url: https://headscale.domain.com:30443
     tls_cert_path: /etc/headscale/tls/tls.crt
     tls_key_path: /etc/headscale/tls/tls.key
     # policy:

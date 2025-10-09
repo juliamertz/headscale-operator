@@ -13,7 +13,7 @@ deploy:
   headscale-operator:
     type: helm
     path: helm
-    namespace: headscale
+    namespace: headscale-operator
     valuesFiles:
       - helm/values.yaml
 
