@@ -1,0 +1,112 @@
+use std::sync::Arc;
+
+use anyhow::Context as _;
+use k8s_openapi_ext::{
+    appsv1::StatefulSet,
+    corev1::{Pod, Secret},
+    *,
+};
+use kube::{Api, Client, Resource, ResourceExt};
+use kubus::{ApiExt, Context, kubus};
+
+use crate::{Error, State, crds::PreauthKey, ext::ExecuteExt};
+
+impl PreauthKey {
+    fn common_labels(&self, name: impl ToString) -> impl Iterator<Item = (&'static str, String)> {
+        let name = name.to_string();
+        let manager = env!("CARGO_PKG_NAME").to_string();
+        let version = env!("CARGO_PKG_VERSION").to_string();
+        let instance = format!("headscale-{name}");
+        let part_of = "headscale".to_string();
+        [
+            ("app.kubernetes.io/name", name),
+            ("app.kubernetes.io/managed-by", manager),
+            ("app.kubernetes.io/instance", instance),
+            ("app.kubernetes.io/version", version),
+            ("app.kubernetes.io/part-of", part_of),
+        ]
+        .into_iter()
+    }
+
+    async fn generate_key(&self, client: Client) -> Result<String, Error> {
+        let namespace = self.namespace().unwrap();
+
+        let stateful_set = Api::<StatefulSet>::namespaced(client.clone(), &namespace)
+            .get("headscale-central")
+            .await
+            .context("cannot get headscale statefulset")?;
+
+        let api: Api<Pod> = Api::namespaced(client.clone(), &namespace);
+        let first_pod = format!("{}-{}", stateful_set.name_unchecked(), 0);
+        let user_id = self
+            .spec
+            .user_id
+            .context("user id field must be set")?
+            .to_string();
+
+        let mut cmd: Vec<String> = ["headscale", "preauthkeys", "create", "--user", &user_id]
+            .into_iter()
+            .map(Into::into)
+            .collect();
+
+        if self.spec.ephemeral {
+            cmd.push("--ephemeral".into());
+        }
+
+        if self.spec.reusable {
+            cmd.push("--reusable".into());
+        }
+
+        let (mut stdout, _) = api.exec_with_output(&first_pod, cmd).await?;
+        let authkey = stdout
+            .read_to_string()
+            .await
+            .unwrap_or_default()
+            .trim_end_matches('\n')
+            .to_string();
+
+        Ok(authkey)
+    }
+
+    fn secret_name(&self) -> String {
+        let name = self.name_unchecked();
+        self.spec
+            .target_secret
+            .clone()
+            .unwrap_or_else(|| format!("headscale-preauth-{name}"))
+    }
+
+    fn render_secret(&self, preauth_key: String) -> Secret {
+        let namespace = self.namespace().unwrap_or_default();
+        let owner_ref = self.owner_ref(&()).unwrap_or_default();
+        let secret_name = self.secret_name();
+
+        Secret::new(&secret_name)
+            .namespace(&namespace)
+            .labels(self.common_labels(&secret_name))
+            .owner(owner_ref)
+            .string_data([("authkey", preauth_key)])
+    }
+}
+
+#[kubus(event = Apply, finalizer = "kubus.io/preauth-key-finalizer")]
+async fn create_preauth_key(
+    resource: Arc<PreauthKey>,
+    ctx: Arc<Context<State>>,
+) -> Result<(), Error> {
+    let client = ctx.client.clone();
+
+    let namespace = resource.namespace().unwrap();
+    let secret_name = resource.secret_name();
+
+    let dummy = Secret::new(&secret_name).namespace(&namespace);
+    let exists = dummy.exists(&client).await?;
+
+    let preauth_key = resource.generate_key(client.clone()).await?;
+    let secret = resource.render_secret(preauth_key).apply(&client).await?;
+    if !exists {
+        secret.apply(&client).await?;
+    }
+
+    Ok(())
+}

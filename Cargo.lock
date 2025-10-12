@@ -105,6 +105,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.100"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a23eb6b1614318a8071c9b2521f36b424b2c83db5eb3a0fead4a6c0809af6e61"
+
+[[package]]
 name = "async-broadcast"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -380,6 +386,12 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "data-encoding"
+version = "2.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2a2330da5de22e8a3cb63252ce2abb30116bf5265e89c0e01bc17015ce30a476"
 
 [[package]]
 name = "deranged"
@@ -692,6 +704,8 @@ checksum = "5419bdc4f6a9207fbeba6d11b604d481addf78ecd10c11ad51e76c2f6482748d"
 name = "headscale-operator"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "async-trait",
  "clap",
  "hex",
  "k8s-openapi",
@@ -992,7 +1006,7 @@ dependencies = [
 [[package]]
 name = "k8s-openapi-ext"
 version = "0.26.1"
-source = "git+https://github.com/juliamertz/k8s-openapi-ext-rs#6f04cf3ffdddf18dc1d678d0e8e5659e5220200c"
+source = "git+https://github.com/juliamertz/k8s-openapi-ext-rs#a60c2a2c8b8dcf1e5c7f08dc912a3b214cb719bc"
 dependencies = [
  "base64",
  "chrono",
@@ -1042,6 +1056,7 @@ dependencies = [
  "serde_yaml",
  "thiserror 2.0.17",
  "tokio",
+ "tokio-tungstenite",
  "tokio-util",
  "tower",
  "tower-http",
@@ -1110,9 +1125,8 @@ dependencies = [
 
 [[package]]
 name = "kubus"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a45ce85d456d5db40f6e8f4f13444291d8374c23bb43eac7878e22e6369b493d"
+version = "0.3.1"
+source = "git+https://github.com/juliamertz/kubus#611036063ca9490e782fe7f897bf5cbaf17cca9e"
 dependencies = [
  "async-trait",
  "futures",
@@ -1129,9 +1143,8 @@ dependencies = [
 
 [[package]]
 name = "kubus_derive"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f3a5315e86664ef5b889a3cc4f05cf21ee766419d6c05877da4b38d3fbd30fd"
+version = "0.3.1"
+source = "git+https://github.com/juliamertz/kubus#611036063ca9490e782fe7f897bf5cbaf17cca9e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1775,6 +1788,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha1"
+version = "0.10.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3bf829a2d51ab4a5ddf1352d8470c140cadc8301b2ae1789db023f01cedd6ba"
+dependencies = [
+ "cfg-if",
+ "cpufeatures",
+ "digest",
+]
+
+[[package]]
 name = "sha2"
 version = "0.10.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1982,6 +2006,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokio-tungstenite"
+version = "0.27.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "489a59b6730eda1b0171fcfda8b121f4bee2b35cba8645ca35c5f7ba3eb736c1"
+dependencies = [
+ "futures-util",
+ "log",
+ "tokio",
+ "tungstenite",
+]
+
+[[package]]
 name = "tokio-util"
 version = "0.7.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2107,6 +2143,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
+name = "tungstenite"
+version = "0.27.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eadc29d668c91fcc564941132e17b28a7ceb2f3ebf0b9dae3e03fd7a6748eb0d"
+dependencies = [
+ "bytes",
+ "data-encoding",
+ "http",
+ "httparse",
+ "log",
+ "rand",
+ "sha1",
+ "thiserror 2.0.17",
+ "utf-8",
+]
+
+[[package]]
 name = "typenum"
 version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2135,6 +2188,12 @@ name = "untrusted"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
+
+[[package]]
+name = "utf-8"
+version = "0.7.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09cc8ee72d2a9becf2f2febe0205bbed8fc6615b7cb429ad062dc7b7ddd036a9"
 
 [[package]]
 name = "utf8parse"

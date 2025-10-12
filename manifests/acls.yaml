@@ -1,0 +1,13 @@
+apiVersion: kubus.io/v1
+kind: ACLPolicy
+metadata:
+  name: example
+  namespace: headscale
+spec:
+  rules:
+    - action: accept
+      src: ['kubernetes@']
+      dst: ['homelab@:80,433']
+    - action: accept
+      src: ['julia@']
+      dst: ['*:*']

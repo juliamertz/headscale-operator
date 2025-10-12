@@ -4,11 +4,12 @@ pub use serde::{Deserialize, Serialize};
 
 pub mod aclpolicy;
 pub mod headscale;
+pub mod preauth_key;
 
 pub use aclpolicy::ACLPolicy;
 pub use headscale::Headscale;
+pub use preauth_key::PreauthKey;
 
 pub fn preserve_unknown_fields(_gen: &mut schemars::SchemaGenerator) -> schemars::Schema {
     schemars::json_schema!({ "x-kubernetes-preserve-unknown-fields": true })
 }
-

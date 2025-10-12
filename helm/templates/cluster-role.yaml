@@ -4,18 +4,94 @@ kind: ClusterRole
 metadata:
   name: headscale-operator
 rules:
-  - apiGroups: ["kubus.io"]
-    resources: ["headscales"]
-    verbs: ["get", "list", "watch", "patch", "update"]
-  - apiGroups: ["kubus.io"]
-    resources: ["headscales/status"]
-    verbs: ["get", "patch", "update"]
-  - apiGroups: ["kubus.io"]
-    resources: ["headscales/finalizers"]
-    verbs: ["update"]
-  - apiGroups: ["headscale.io"]
-    resources: ["certificates"]
-    verbs: ["get", "list", "watch", "patch", "update"]
-  - apiGroups: [""]
-    resources: ["events"]
-    verbs: ["create", "patch"]
+  - apiGroups:
+      - kubus.io
+    resources:
+      - headscales
+      - aclpolicies
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+
+  - apiGroups:
+      - kubus.io
+    resources:
+      - headscales/status
+      - aclpolicies/status
+    verbs:
+      - get
+      - update
+      - patch
+
+  - apiGroups:
+      - kubus.io
+    resources:
+      - headscales/finalizers
+      - aclpolicies/finalizers
+    verbs:
+      - update
+
+  - apiGroups:
+      - apps
+    resources:
+      - statefulsets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+
+  - apiGroups:
+      - ""
+    resources:
+      - services
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
