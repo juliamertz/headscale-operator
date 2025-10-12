@@ -1,18 +1,4 @@
-use std::net::SocketAddr;
-use std::sync::Arc;
-
-use crate::crds::*;
-use crate::{Error, State};
-
-use k8s_openapi_ext::corev1::{
-    ConfigMap, ConfigMapVolumeSource, Container, ContainerPort, PodSpec, Secret,
-    SecretVolumeSource, Service, ServicePort, Volume, VolumeMount,
-};
-use k8s_openapi_ext::*;
-use k8s_openapi_ext::{appsv1::StatefulSet, corev1::PodTemplateSpec};
-use kube::{Resource, ResourceExt};
-use kubus::{ApiExt, Context, kubus};
-use rand::RngCore;
+use super::*;
 
 const DEFAULT_HEADSCALE_IMAGE: &str = "headscale/headscale:v0.26.1";
 
@@ -55,6 +41,7 @@ impl Default for Ports {
 }
 
 fn gen_private_key() -> String {
+    use rand::RngCore;
     let mut buf = [0u8; 32];
     rand::rng().fill_bytes(&mut buf);
     format!("privkey:{}", hex::encode(buf))

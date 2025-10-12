@@ -24,6 +24,8 @@ enum Error {
     Kubus(#[from] kubus::Error),
     #[error("io error: {0}")]
     IO(#[from] std::io::Error),
+    #[error("json error: {0}")]
+    Json(#[from] serde_json::Error),
     #[error("anyhow: {0}")]
     Anyhow(#[from] anyhow::Error),
 }

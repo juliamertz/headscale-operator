@@ -1,12 +1,9 @@
-use std::sync::Arc;
+use super::*;
 
-use k8s_openapi_ext::corev1::ConfigMap;
-use k8s_openapi_ext::*;
-use kube::{Resource, ResourceExt};
-use kubus::{ApiExt, Context, kubus};
-use serde_json::json;
-
-use crate::{Error, State, crds::ACLPolicy};
+#[derive(Serialize)]
+struct Acls<'a> {
+    acls: &'a [Rule],
+}
 
 impl ACLPolicy {
     fn common_labels(&self, name: impl ToString) -> impl Iterator<Item = (&'static str, String)> {
@@ -25,19 +22,21 @@ impl ACLPolicy {
         .into_iter()
     }
 
-    fn render_configmap(&self) -> ConfigMap {
+    fn render_configmap(&self) -> Result<ConfigMap, Error> {
         let name = self.name_unchecked();
         let namespace = self.namespace().unwrap();
         let owner_ref = self.owner_ref(&()).unwrap();
 
-        let rules = serde_json::to_value(&self.spec.rules).unwrap();
+        let acls = Acls {
+            acls: &self.spec.rules,
+        };
 
         let name = format!("headscale-acl-{name}");
-        ConfigMap::new(&name)
+        Ok(ConfigMap::new(&name)
             .namespace(&namespace)
             .labels(self.common_labels(&name))
             .owner(owner_ref.clone())
-            .data([("acl.json", json!({ "acls": rules }))])
+            .data([("acl.json", serde_json::to_string(&acls)?)]))
     }
 }
 
@@ -45,7 +44,7 @@ impl ACLPolicy {
 async fn create_acl_policy(policy: Arc<ACLPolicy>, ctx: Arc<Context<State>>) -> Result<(), Error> {
     let client = ctx.client.clone();
 
-    policy.render_configmap().apply(&client).await?;
+    policy.render_configmap()?.apply(&client).await?;
 
     Ok(())
 }
@@ -54,7 +53,7 @@ async fn create_acl_policy(policy: Arc<ACLPolicy>, ctx: Arc<Context<State>>) -> 
 async fn delete_acl_policy(policy: Arc<ACLPolicy>, ctx: Arc<Context<State>>) -> Result<(), Error> {
     let client = ctx.client.clone();
 
-    policy.render_configmap().delete(&client).await?;
+    policy.render_configmap()?.delete(&client).await?;
 
     Ok(())
 }

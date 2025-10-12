@@ -1,15 +1,18 @@
-use std::sync::Arc;
+use super::*;
 
-use anyhow::Context as _;
-use k8s_openapi_ext::{
-    appsv1::StatefulSet,
-    corev1::{Pod, Secret},
-    *,
-};
-use kube::{Api, Client, Resource, ResourceExt};
-use kubus::{ApiExt, Context, kubus};
+impl HeadscaleRef {
+    async fn resolve(&self, client: Client, namespace: impl ToString) -> kube::Result<Headscale> {
+        let api = Api::<Headscale>::namespaced(
+            client,
+            &self
+                .namespace
+                .clone()
+                .unwrap_or_else(|| namespace.to_string()),
+        );
 
-use crate::{Error, State, crds::PreauthKey, ext::ExecuteExt};
+        api.get(&self.name).await
+    }
+}
 
 impl PreauthKey {
     fn common_labels(&self, name: impl ToString) -> impl Iterator<Item = (&'static str, String)> {
@@ -31,10 +34,11 @@ impl PreauthKey {
     async fn generate_key(&self, client: Client) -> Result<String, Error> {
         let namespace = self.namespace().unwrap();
 
-        let stateful_set = Api::<StatefulSet>::namespaced(client.clone(), &namespace)
-            .get("headscale-central")
-            .await
-            .context("cannot get headscale statefulset")?;
+        let stateful_set = self
+            .spec
+            .headscale_ref
+            .resolve(client.clone(), &namespace)
+            .await?;
 
         let api: Api<Pod> = Api::namespaced(client.clone(), &namespace);
         let first_pod = format!("{}-{}", stateful_set.name_unchecked(), 0);
@@ -52,7 +56,6 @@ impl PreauthKey {
         if self.spec.ephemeral {
             cmd.push("--ephemeral".into());
         }
-
         if self.spec.reusable {
             cmd.push("--reusable".into());
         }
@@ -99,12 +102,14 @@ async fn create_preauth_key(
     let namespace = resource.namespace().unwrap();
     let secret_name = resource.secret_name();
 
-    let dummy = Secret::new(&secret_name).namespace(&namespace);
-    let exists = dummy.exists(&client).await?;
+    let exists = Secret::new(&secret_name)
+        .namespace(&namespace)
+        .exists(&client)
+        .await?;
 
-    let preauth_key = resource.generate_key(client.clone()).await?;
-    let secret = resource.render_secret(preauth_key).apply(&client).await?;
     if !exists {
+        let preauth_key = resource.generate_key(client.clone()).await?;
+        let secret = resource.render_secret(preauth_key).apply(&client).await?;
         secret.apply(&client).await?;
     }
 

@@ -2,8 +2,8 @@ use super::*;
 
 #[derive(Default, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 pub struct HeadscaleRef {
-    name: String,
-    namespace: Option<String>,
+    pub name: String,
+    pub namespace: Option<String>,
 }
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
