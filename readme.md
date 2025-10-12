@@ -1,0 +1,6 @@
+- [x] Headscale statefulset
+- [x] Aclpolicy
+- [ ] Preauth keys (WIP)
+- [ ] Subnet router
+- [ ] Tailscale sidecar
+- [ ] Api server proxy
