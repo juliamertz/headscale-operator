@@ -1,3 +1,5 @@
+use kube::api::AttachParams;
+
 use super::*;
 
 impl HeadscaleRef {
@@ -71,6 +73,43 @@ impl PreauthKey {
         Ok(authkey)
     }
 
+    async fn revoke_key(&self, client: Client, key: &str) -> Result<(), Error> {
+        let namespace = self.namespace().unwrap();
+
+        let stateful_set = self
+            .spec
+            .headscale_ref
+            .resolve(client.clone(), &namespace)
+            .await?;
+
+        // TODO: clean up/abstract this exec stuff or just use the grpc api?
+        let api: Api<Pod> = Api::namespaced(client.clone(), &namespace);
+        let first_pod = format!("{}-{}", stateful_set.name_unchecked(), 0);
+        let user_id = self
+            .spec
+            .user_id
+            .context("user id field must be set")?
+            .to_string();
+
+        let cmd: Vec<String> = [
+            "headscale",
+            "preauthkeys",
+            "revoke",
+            "--user",
+            &user_id,
+            key,
+        ]
+        .into_iter()
+        .map(Into::into)
+        .collect();
+
+        let mut proc = api.exec(&first_pod, cmd, &AttachParams::default()).await?;
+        let status = proc.take_status().unwrap().await.unwrap(); // TODO:
+        dbg!(status);
+
+        Ok(())
+    }
+
     fn secret_name(&self) -> String {
         let name = self.name_unchecked();
         self.spec
@@ -112,6 +151,42 @@ async fn create_preauth_key(
         let secret = resource.render_secret(preauth_key).apply(&client).await?;
         secret.apply(&client).await?;
     }
+
+    Ok(())
+}
+
+#[kubus(event = Delete, finalizer = "kubus.io/preauth-key-finalizer")]
+async fn revoke_preauth_key(
+    resource: Arc<PreauthKey>,
+    ctx: Arc<Context<State>>,
+) -> Result<(), Error> {
+    let client = ctx.client.clone();
+
+    let name = resource.name_unchecked();
+    let namespace = resource.namespace().unwrap_or_default();
+    let secret_name = resource.secret_name();
+
+    let api = Api::<Secret>::namespaced(client.clone(), &namespace);
+    let secret = api.get(&name).await?;
+
+    let data = secret
+        .data
+        .clone()
+        .context("expected preauth key secret data")?;
+
+    let encoded = data
+        .get("authkey")
+        .context("unable to get preauth key secret value")?;
+
+    let preauth_key = base64::decode(&encoded.0).unwrap();
+    resource
+        .revoke_key(client.clone(), &String::from_utf8_lossy(&preauth_key))
+        .await?;
+
+    Secret::new(secret_name)
+        .namespace(namespace)
+        .delete(&client)
+        .await?;
 
     Ok(())
 }

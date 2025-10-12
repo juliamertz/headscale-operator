@@ -14,7 +14,7 @@ use crds::*;
 
 use crate::handlers::aclpolicy::{create_acl_policy, delete_acl_policy};
 use crate::handlers::headscale::{cleanup_headscale, deploy_headscale};
-use crate::handlers::preauth_key::create_preauth_key;
+use crate::handlers::preauth_key::{create_preauth_key, revoke_preauth_key};
 
 #[derive(Debug, Error)]
 enum Error {
@@ -55,8 +55,11 @@ async fn main() -> Result<(), Error> {
 
     match opts.command.unwrap_or_default() {
         Command::Crd => {
-            let mut list = List::default();
-            list.items = vec![Headscale::crd(), ACLPolicy::crd(), PreauthKey::crd()];
+            let items = vec![Headscale::crd(), ACLPolicy::crd(), PreauthKey::crd()];
+            let list = List {
+                items,
+                ..Default::default()
+            };
             let yaml = serde_yaml::to_string(&list).unwrap();
             let mut stdout = std::io::stdout();
             stdout.write_all(yaml.as_bytes())?;
@@ -69,9 +72,10 @@ async fn main() -> Result<(), Error> {
                 .with_context((client, state))
                 .handler(deploy_headscale)
                 .handler(cleanup_headscale)
-                .handler(create_acl_policy)
-                .handler(delete_acl_policy)
-                .handler(create_preauth_key)
+                // .handler(create_acl_policy)
+                // .handler(delete_acl_policy)
+                // .handler(create_preauth_key)
+                // .handler(revoke_preauth_key)
                 .run()
                 .await?
         }

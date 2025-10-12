@@ -17,4 +17,5 @@ deploy:
     valuesFiles:
       - helm/values.yaml
 
-insecureRegistries: []
+insecureRegistries: 
+- brainpod-registry.localhost:5003

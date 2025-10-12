@@ -52,8 +52,13 @@ async fn create_acl_policy(policy: Arc<ACLPolicy>, ctx: Arc<Context<State>>) -> 
 #[kubus(event = Delete, finalizer = "kubus.io/acl-policy-finalizer")]
 async fn delete_acl_policy(policy: Arc<ACLPolicy>, ctx: Arc<Context<State>>) -> Result<(), Error> {
     let client = ctx.client.clone();
+    let name = policy.name_unchecked();
+    let namespace = policy.namespace().unwrap();
 
-    policy.render_configmap()?.delete(&client).await?;
+    ConfigMap::new(name)
+        .namespace(namespace)
+        .delete(&client)
+        .await?;
 
     Ok(())
 }

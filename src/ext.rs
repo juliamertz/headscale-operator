@@ -1,8 +1,10 @@
 use std::fmt::Debug;
 
 use async_trait::async_trait;
+use k8s_openapi_ext::appsv1::{Deployment, StatefulSet};
+use k8s_openapi_ext::corev1::Pod;
 use kube::api::{AttachParams, Execute};
-use kube::{Api, Resource};
+use kube::{Api, Client, Resource, ResourceExt};
 use serde::de::DeserializeOwned;
 use tokio::io::{AsyncRead, AsyncReadExt};
 
@@ -77,5 +79,23 @@ where
         let stdout = Stdout::new(process.stdout().unwrap());
         let stderr = Stderr::new(process.stderr().unwrap());
         Ok((stdout, stderr))
+    }
+}
+
+#[async_trait]
+pub trait PodOwner {
+    async fn get_pod(&self, client: Client, ) -> kube::Result<Pod>;
+}
+
+#[async_trait]
+impl PodOwner for StatefulSet {
+    async fn get_pod(&self, client: Client) -> kube::Result<Pod> {
+        let namespace = self.namespace().unwrap_or_default();
+        let spec = self.spec.clone().unwrap_or_default();
+        let selector = spec.selector.match_labels;
+        let api = Api::<Pod>::namespaced(client.clone(), &namespace);
+
+
+        todo!()
     }
 }

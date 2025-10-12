@@ -64,7 +64,7 @@ impl Headscale {
         .into_iter()
     }
 
-    fn render_ports(&self) -> Ports {
+    fn get_ports(&self) -> Ports {
         let value = self.spec.config.clone();
         let config = serde_json::from_value::<Config>(value).unwrap();
 
@@ -187,9 +187,7 @@ pub async fn deploy_headscale(
 ) -> Result<(), Error> {
     let client = ctx.client.clone();
 
-    tracing::info!("deploying headscale: {headscale:?}");
-
-    let ports = headscale.render_ports();
+    let ports = headscale.get_ports();
     let keys = headscale.render_secret();
     let config = headscale.render_configmap();
     let volumes = headscale.render_volumes(&config, &keys);
@@ -215,7 +213,7 @@ pub async fn cleanup_headscale(
 
     tracing::info!("deleting headscale {name} from {namespace}");
 
-    let ports = headscale.render_ports();
+    let ports = headscale.get_ports();
     let keys = headscale.render_secret();
     let config = headscale.render_configmap();
     let volumes = headscale.render_volumes(&config, &keys);
