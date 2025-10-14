@@ -15,7 +15,7 @@ pub struct PreauthKeySpec {
     pub expiration: String,
     pub user_id: Option<u32>,
     pub target_secret: Option<String>,
-    pub headscale_ref: HeadscaleRef,
+    pub headscale_ref: Option<HeadscaleRef>,
 }
 
 impl Default for PreauthKeySpec {

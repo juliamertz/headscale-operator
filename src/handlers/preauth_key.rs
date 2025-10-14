@@ -1,16 +1,18 @@
+use crate::ext::PodOwner;
+use anyhow::anyhow;
 use kube::api::AttachParams;
+use tokio::io::AsyncReadExt;
 
 use super::*;
 
 impl HeadscaleRef {
     async fn resolve(&self, client: Client, namespace: impl ToString) -> kube::Result<Headscale> {
-        let api = Api::<Headscale>::namespaced(
-            client,
-            &self
-                .namespace
-                .clone()
-                .unwrap_or_else(|| namespace.to_string()),
-        );
+        let namespace = self
+            .namespace
+            .clone()
+            .unwrap_or_else(|| namespace.to_string());
+
+        let api = Api::<Headscale>::namespaced(client, &namespace);
 
         api.get(&self.name).await
     }
@@ -35,15 +37,22 @@ impl PreauthKey {
 
     async fn generate_key(&self, client: Client) -> Result<String, Error> {
         let namespace = self.namespace().unwrap();
-
-        let stateful_set = self
+        let headscale_ref = self
             .spec
             .headscale_ref
-            .resolve(client.clone(), &namespace)
-            .await?;
+            .as_ref()
+            .context("missing field headscaleRef")?;
 
-        let api: Api<Pod> = Api::namespaced(client.clone(), &namespace);
-        let first_pod = format!("{}-{}", stateful_set.name_unchecked(), 0);
+        let stateful_set_name = headscale_ref
+            .resolve(client.clone(), &namespace)
+            .await?
+            .stateful_set_name();
+
+        let api: Api<StatefulSet> = Api::namespaced(client.clone(), &namespace);
+        let stateful_set = api.get(&stateful_set_name).await?;
+
+        let first_pod = stateful_set.get_pod(client.clone()).await?.unwrap();
+
         let user_id = self
             .spec
             .user_id
@@ -62,29 +71,44 @@ impl PreauthKey {
             cmd.push("--reusable".into());
         }
 
-        let (mut stdout, _) = api.exec_with_output(&first_pod, cmd).await?;
-        let authkey = stdout
-            .read_to_string()
-            .await
-            .unwrap_or_default()
-            .trim_end_matches('\n')
-            .to_string();
+        let api: Api<Pod> = Api::namespaced(client.clone(), &namespace);
+        let pod_name = first_pod.name_unchecked();
+        let (status, mut stdout, mut stderr) = api.exec_with_output(&pod_name, cmd).await?;
+
+        if status.status.unwrap_or_default().as_str() == "Failure" {
+            panic!(
+                "{} : {}",
+                status.message.unwrap_or_default(),
+                stderr.read_to_string().await.unwrap()
+            );
+        }
+
+        let authkey = stdout.read_to_string().await.unwrap().trim().to_string();
+
+        if authkey.is_empty() {
+            unreachable!() // TODO:
+        }
 
         Ok(authkey)
     }
 
     async fn revoke_key(&self, client: Client, key: &str) -> Result<(), Error> {
         let namespace = self.namespace().unwrap();
-
-        let stateful_set = self
+        let headscale_ref = self
             .spec
             .headscale_ref
-            .resolve(client.clone(), &namespace)
-            .await?;
+            .as_ref()
+            .context("missing field headscaleRef")?;
 
-        // TODO: clean up/abstract this exec stuff or just use the grpc api?
-        let api: Api<Pod> = Api::namespaced(client.clone(), &namespace);
-        let first_pod = format!("{}-{}", stateful_set.name_unchecked(), 0);
+        let stateful_set_name = headscale_ref
+            .resolve(client.clone(), &namespace)
+            .await?
+            .stateful_set_name();
+
+        let api: Api<StatefulSet> = Api::namespaced(client.clone(), &namespace);
+        let stateful_set = api.get(&stateful_set_name).await?;
+
+        let first_pod = stateful_set.get_pod(client.clone()).await?.unwrap();
         let user_id = self
             .spec
             .user_id
@@ -103,9 +127,23 @@ impl PreauthKey {
         .map(Into::into)
         .collect();
 
-        let mut proc = api.exec(&first_pod, cmd, &AttachParams::default()).await?;
-        let status = proc.take_status().unwrap().await.unwrap(); // TODO:
-        dbg!(status);
+        let api = Api::<Pod>::namespaced(client.clone(), &namespace);
+        let pod_name = first_pod.name_unchecked();
+
+        let mut proc = api.exec(&pod_name, cmd, &AttachParams::default()).await?;
+        let handle = proc.take_status().unwrap().await.unwrap();
+        let status = handle.status.unwrap_or_else(|| "Unknown".into());
+
+        if &status != "Success" {
+            let mut stderr = String::new();
+            proc.stderr()
+                .unwrap()
+                .read_to_string(&mut stderr)
+                .await
+                .unwrap();
+
+            return Err(anyhow!("non success exit status: {:?} output: {}", status, stderr).into());
+        }
 
         Ok(())
     }
@@ -167,21 +205,22 @@ async fn revoke_preauth_key(
     let secret_name = resource.secret_name();
 
     let api = Api::<Secret>::namespaced(client.clone(), &namespace);
-    let secret = api.get(&name).await?;
+    let secret = api.get(&secret_name).await?;
 
     let data = secret
         .data
         .clone()
         .context("expected preauth key secret data")?;
 
-    let encoded = data
+    let preauth_key = data
         .get("authkey")
-        .context("unable to get preauth key secret value")?;
+        .context("unable to get preauth key secret value")
+        .map(|v| v.0.clone())
+        .map(String::from_utf8)
+        .unwrap()
+        .unwrap();
 
-    let preauth_key = base64::decode(&encoded.0).unwrap();
-    resource
-        .revoke_key(client.clone(), &String::from_utf8_lossy(&preauth_key))
-        .await?;
+    resource.revoke_key(client.clone(), &preauth_key).await?;
 
     Secret::new(secret_name)
         .namespace(namespace)

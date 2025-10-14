@@ -92,8 +92,12 @@ impl Headscale {
         Volumes { config, keys, tls }
     }
 
+    pub fn stateful_set_name(&self) -> String {
+        format!("headscale-{}", self.name_unchecked())
+    }
+
     fn render_stateful_set(&self, ports: &Ports, volumes: Volumes) -> StatefulSet {
-        let name = format!("headscale-{}", self.name_unchecked());
+        let name = self.stateful_set_name();
         let namespace = self.namespace().unwrap_or_default();
         let owner_ref = self.owner_ref(&()).unwrap_or_default();
 

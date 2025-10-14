@@ -64,10 +64,10 @@ async fn main() -> Result<(), Error> {
                 .with_context((client, state))
                 .handler(deploy_headscale)
                 .handler(cleanup_headscale)
-                // .handler(create_acl_policy)
-                // .handler(delete_acl_policy)
-                // .handler(create_preauth_key)
-                // .handler(revoke_preauth_key)
+                .handler(create_acl_policy)
+                .handler(delete_acl_policy)
+                .handler(create_preauth_key)
+                .handler(revoke_preauth_key)
                 .run()
                 .await?
         }
