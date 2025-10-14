@@ -1,10 +1,6 @@
 use super::*;
 
-#[derive(Default, Deserialize, Serialize, Clone, Debug, JsonSchema)]
-pub struct HeadscaleRef {
-    pub name: String,
-    pub namespace: Option<String>,
-}
+use crate::handlers::HeadscaleRef;
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(group = "headscale.juliamertz.dev", version = "v1", kind = "PreauthKey", namespaced)]
@@ -15,7 +11,7 @@ pub struct PreauthKeySpec {
     pub expiration: String,
     pub user_id: Option<u32>,
     pub target_secret: Option<String>,
-    pub headscale_ref: Option<HeadscaleRef>,
+    pub headscale_ref: HeadscaleRef,
 }
 
 impl Default for PreauthKeySpec {

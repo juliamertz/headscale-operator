@@ -2,8 +2,9 @@ apiVersion: headscale.juliamertz.dev/v1
 kind: ACLPolicy
 metadata:
   name: example
-  namespace: headscale
 spec:
+  headscaleRef:
+    name: example
   rules:
     - action: accept
       src: ['kubernetes@']

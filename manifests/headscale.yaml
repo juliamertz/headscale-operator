@@ -38,8 +38,8 @@ spec:
     server_url: https://headscale.domain.com:30443
     tls_cert_path: /etc/headscale/tls/tls.crt
     tls_key_path: /etc/headscale/tls/tls.key
-    # policy:
-    #   path: "/etc/headscale/acl.json"
+    policy:
+      path: "/etc/headscale/acl.json"
     listen_addr: 0.0.0.0:8080
     metrics_listen_addr: 0.0.0.0:9090
     private_key_path: /var/lib/headscale/private.key

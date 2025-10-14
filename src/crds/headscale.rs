@@ -34,3 +34,10 @@ pub struct HeadscaleStatus {
     pub message: Option<String>,
     pub last_updated: Option<String>,
 }
+
+#[derive(Default, Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct HeadscaleRef {
+    pub name: String,
+    pub namespace: Option<String>,
+}
+

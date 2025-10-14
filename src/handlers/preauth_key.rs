@@ -3,19 +3,6 @@ use anyhow::anyhow;
 
 use super::*;
 
-impl HeadscaleRef {
-    async fn resolve(&self, client: Client, namespace: impl ToString) -> kube::Result<Headscale> {
-        let namespace = self
-            .namespace
-            .clone()
-            .unwrap_or_else(|| namespace.to_string());
-
-        let api = Api::<Headscale>::namespaced(client, &namespace);
-
-        api.get(&self.name).await
-    }
-}
-
 impl PreauthKey {
     fn common_labels(&self, name: impl ToString) -> impl Iterator<Item = (&'static str, String)> {
         let name = name.to_string();
@@ -35,21 +22,6 @@ impl PreauthKey {
 
     async fn generate_key(&self, client: Client) -> Result<String, Error> {
         let namespace = self.namespace().unwrap();
-        let headscale_ref = self
-            .spec
-            .headscale_ref
-            .as_ref()
-            .context("missing field headscaleRef")?;
-
-        let stateful_set_name = headscale_ref
-            .resolve(client.clone(), &namespace)
-            .await?
-            .stateful_set_name();
-
-        let api: Api<StatefulSet> = Api::namespaced(client.clone(), &namespace);
-        let stateful_set = api.get(&stateful_set_name).await?;
-
-        let first_pod = stateful_set.get_pod(client.clone()).await?.unwrap();
 
         let user_id = self
             .spec
@@ -69,13 +41,12 @@ impl PreauthKey {
             cmd.push("--reusable".into());
         }
 
-        let api: Api<Pod> = Api::namespaced(client.clone(), &namespace);
-        let pod_name = first_pod.name_unchecked();
-        let stdout = api
-            .exec_with_output(&pod_name, cmd)
-            .await
-            .map_err(|stderr| anyhow!("error creating preauth key: {stderr}"))?;
+        let headscale = self.spec
+            .headscale_ref
+            .resolve(client.clone(), &namespace)
+            .await?;
 
+        let stdout = headscale.exec(&client, cmd).await?;
         let authkey = stdout.trim().to_string();
 
         Ok(authkey)
@@ -83,13 +54,9 @@ impl PreauthKey {
 
     async fn revoke_key(&self, client: Client, key: &str) -> Result<(), Error> {
         let namespace = self.namespace().unwrap();
-        let headscale_ref = self
+        let stateful_set_name = self
             .spec
             .headscale_ref
-            .as_ref()
-            .context("missing field headscaleRef")?;
-
-        let stateful_set_name = headscale_ref
             .resolve(client.clone(), &namespace)
             .await?
             .stateful_set_name();

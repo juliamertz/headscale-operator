@@ -1,6 +1,28 @@
+use std::fmt::Debug;
+
+use anyhow::anyhow;
+use kube::api::ListParams;
+
 use super::*;
 
 const DEFAULT_HEADSCALE_IMAGE: &str = "headscale/headscale:v0.26.1";
+
+impl HeadscaleRef {
+    pub async fn resolve(
+        &self,
+        client: Client,
+        namespace: impl ToString,
+    ) -> kube::Result<Headscale> {
+        let namespace = self
+            .namespace
+            .clone()
+            .unwrap_or_else(|| namespace.to_string());
+
+        let api = Api::<Headscale>::namespaced(client, &namespace);
+
+        api.get(&self.name).await
+    }
+}
 
 #[derive(Deserialize)]
 #[serde(default)]
@@ -19,9 +41,10 @@ impl Default for Config {
 }
 
 struct Volumes {
-    config: Volume,
     keys: Volume,
     tls: Volume,
+    config: Volume,
+    acls: Volume,
 }
 
 struct Ports {
@@ -75,9 +98,10 @@ impl Headscale {
         }
     }
 
-    fn render_volumes(&self, config: &ConfigMap, keys: &Secret) -> Volumes {
-        let config_name = config.name_unchecked();
+    fn render_volumes(&self, config: &ConfigMap, acls: &ConfigMap, keys: &Secret) -> Volumes {
         let keys_name = &keys.name_unchecked();
+        let config_name = config.name_unchecked();
+        let acls_name = acls.name_unchecked();
         let tls_name = &self
             .spec
             .tls
@@ -85,11 +109,17 @@ impl Headscale {
             .clone()
             .expect("valid secret name");
 
-        let config = Volume::configmap("config", ConfigMapVolumeSource::new(config_name));
         let keys = Volume::secret("keys", SecretVolumeSource::secret_name(keys_name));
         let tls = Volume::secret("tls", SecretVolumeSource::secret_name(tls_name));
+        let config = Volume::configmap("config", ConfigMapVolumeSource::new(config_name));
+        let acls = Volume::configmap("acls", ConfigMapVolumeSource::new(acls_name));
 
-        Volumes { config, keys, tls }
+        Volumes {
+            keys,
+            tls,
+            config,
+            acls,
+        }
     }
 
     pub fn stateful_set_name(&self) -> String {
@@ -112,14 +142,17 @@ impl Headscale {
                 ])
                 .env(self.spec.deployment.env.clone())
                 .volume_mounts([
+                    VolumeMount::new("/etc/headscale/tls", &volumes.tls).read_only(),
+                    VolumeMount::new("/var/lib/headscale", &volumes.keys).read_only(),
                     VolumeMount::new("/etc/headscale/config.yaml", &volumes.config)
                         .sub_path("config.yaml")
                         .read_only(),
-                    VolumeMount::new("/etc/headscale/tls", &volumes.tls).read_only(),
-                    VolumeMount::new("/var/lib/headscale", &volumes.keys).read_only(),
+                    VolumeMount::new("/etc/headscale/acl.json", &volumes.acls)
+                        .sub_path("acl.json")
+                        .read_only(),
                 ]),
         )
-        .volumes([volumes.config, volumes.tls, volumes.keys]);
+        .volumes([volumes.tls, volumes.keys, volumes.config, volumes.acls]);
 
         StatefulSet::new(&name)
             .namespace(&namespace)
@@ -164,6 +197,25 @@ impl Headscale {
             )])
     }
 
+    pub fn acl_configmap_name(&self) -> String {
+        format!("headscale-{}-acl", self.name_unchecked())
+    }
+
+    fn render_acl_configmap(&self) -> ConfigMap {
+        let name = self.acl_configmap_name();
+        let namespace = self.namespace().unwrap_or_default();
+        let owner_ref = self.owner_ref(&()).unwrap_or_default();
+
+        ConfigMap::new(&name)
+            .namespace(&namespace)
+            .labels(self.common_labels(&name))
+            .owner(owner_ref)
+            .data([(
+                "acl.json",
+                serde_json::to_string(&serde_json::json!({})).unwrap(),
+            )])
+    }
+
     fn render_service(&self, ports: &Ports, selector_name: impl ToString) -> Service {
         let name = format!("headscale-{}-service", self.name_unchecked());
         let namespace = self.namespace().unwrap();
@@ -182,6 +234,30 @@ impl Headscale {
         .owner(owner_ref)
         .selector([("app.kubernetes.io/name", selector_name)])
     }
+
+    pub async fn exec<I, T>(&self, client: &Client, command: I) -> Result<String, Error>
+    where
+        I: IntoIterator<Item = T> + Debug + Send + Sync + 'static,
+        T: Into<String>,
+    {
+        let namespace = self.namespace().unwrap_or_default();
+        let statefulset_name = self.stateful_set_name();
+
+        let labels = format!("app.kubernetes.io/name={statefulset_name}");
+        let list_params = ListParams::default().labels(&labels);
+        let api = Api::<Pod>::namespaced(client.clone(), &namespace);
+        let pods = api.list(&list_params).await?;
+
+        let pod = pods
+            .items
+            .first()
+            .cloned()
+            .with_context(|| format!("no pods found for {statefulset_name}"))?;
+
+        api.exec_with_output(&pod.name_unchecked(), command)
+            .await
+            .map_err(|stderr| anyhow!("error executing command in headscale pod: {stderr}").into())
+    }
 }
 
 #[kubus(event = Apply, finalizer = "headscale.juliamertz.dev/headscale-finalizer")]
@@ -189,19 +265,21 @@ pub async fn deploy_headscale(
     headscale: Arc<Headscale>,
     ctx: Arc<Context<State>>,
 ) -> Result<(), Error> {
-    let client = ctx.client.clone();
+    let client = &ctx.client;
 
     let ports = headscale.get_ports();
     let keys = headscale.render_secret();
     let config = headscale.render_configmap();
-    let volumes = headscale.render_volumes(&config, &keys);
+    let acls = headscale.render_acl_configmap();
+    let volumes = headscale.render_volumes(&config, &acls, &keys);
     let stateful_set = headscale.render_stateful_set(&ports, volumes);
     let service = headscale.render_service(&ports, stateful_set.name_unchecked());
 
-    keys.apply_if_not_exists(&client).await?;
-    config.apply(&client).await?;
-    stateful_set.apply(&client).await?;
-    service.apply(&client).await?;
+    keys.apply_if_not_exists(client).await?;
+    config.apply(client).await?;
+    acls.apply_if_not_exists(client).await?;
+    stateful_set.apply(client).await?;
+    service.apply(client).await?;
 
     Ok(())
 }
@@ -220,13 +298,15 @@ pub async fn cleanup_headscale(
     let ports = headscale.get_ports();
     let keys = headscale.render_secret();
     let config = headscale.render_configmap();
-    let volumes = headscale.render_volumes(&config, &keys);
+    let acls = headscale.render_acl_configmap();
+    let volumes = headscale.render_volumes(&config, &acls, &keys);
     let stateful_set = headscale.render_stateful_set(&ports, volumes);
     let service = headscale.render_service(&ports, stateful_set.name_unchecked());
 
     stateful_set.delete(client).await?;
     service.delete(client).await?;
     config.delete(client).await?;
+    acls.delete(client).await?;
     keys.delete(client).await?;
 
     Ok(())

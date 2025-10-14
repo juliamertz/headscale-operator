@@ -1,5 +1,7 @@
 use super::*;
 
+use crate::handlers::HeadscaleRef;
+
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum Action {
@@ -15,8 +17,14 @@ pub struct Rule {
 }
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
-#[kube(group = "headscale.juliamertz.dev", version = "v1", kind = "ACLPolicy", namespaced)]
+#[kube(
+    group = "headscale.juliamertz.dev",
+    version = "v1",
+    kind = "ACLPolicy",
+    namespaced
+)]
 #[serde(rename_all = "camelCase")]
 pub struct ACLPolicySpec {
+    pub headscale_ref: HeadscaleRef,
     pub rules: Vec<Rule>,
 }

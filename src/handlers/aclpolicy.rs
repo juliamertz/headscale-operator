@@ -22,8 +22,7 @@ impl ACLPolicy {
         .into_iter()
     }
 
-    fn render_configmap(&self) -> Result<ConfigMap, Error> {
-        let name = self.name_unchecked();
+    fn render_configmap(&self, name: &str) -> Result<ConfigMap, Error> {
         let namespace = self.namespace().unwrap();
         let owner_ref = self.owner_ref(&()).unwrap();
 
@@ -31,10 +30,9 @@ impl ACLPolicy {
             acls: &self.spec.rules,
         };
 
-        let name = format!("headscale-acl-{name}");
         Ok(ConfigMap::new(&name)
             .namespace(&namespace)
-            .labels(self.common_labels(&name))
+            .labels(self.common_labels(name))
             .owner(owner_ref.clone())
             .data([("acl.json", serde_json::to_string(&acls)?)]))
     }
@@ -43,8 +41,16 @@ impl ACLPolicy {
 #[kubus(event = Apply, finalizer = "headscale.juliamertz.dev/acl-policy-finalizer")]
 async fn create_acl_policy(policy: Arc<ACLPolicy>, ctx: Arc<Context<State>>) -> Result<(), Error> {
     let client = ctx.client.clone();
+    let namespace = policy.namespace().unwrap_or_default();
 
-    policy.render_configmap()?.apply(&client).await?;
+    let headscale = policy
+        .spec
+        .headscale_ref
+        .resolve(client.clone(), &namespace)
+        .await?;
+
+    let name = headscale.acl_configmap_name();
+    policy.render_configmap(&name)?.apply(&client).await?;
 
     Ok(())
 }
