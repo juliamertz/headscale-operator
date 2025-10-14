@@ -1,7 +1,5 @@
 use crate::ext::PodOwner;
 use anyhow::anyhow;
-use kube::api::AttachParams;
-use tokio::io::AsyncReadExt;
 
 use super::*;
 
@@ -73,21 +71,12 @@ impl PreauthKey {
 
         let api: Api<Pod> = Api::namespaced(client.clone(), &namespace);
         let pod_name = first_pod.name_unchecked();
-        let (status, mut stdout, mut stderr) = api.exec_with_output(&pod_name, cmd).await?;
+        let stdout = api
+            .exec_with_output(&pod_name, cmd)
+            .await
+            .map_err(|stderr| anyhow!("error creating preauth key: {stderr}"))?;
 
-        if status.status.unwrap_or_default().as_str() == "Failure" {
-            panic!(
-                "{} : {}",
-                status.message.unwrap_or_default(),
-                stderr.read_to_string().await.unwrap()
-            );
-        }
-
-        let authkey = stdout.read_to_string().await.unwrap().trim().to_string();
-
-        if authkey.is_empty() {
-            unreachable!() // TODO:
-        }
+        let authkey = stdout.trim().to_string();
 
         Ok(authkey)
     }
@@ -130,20 +119,9 @@ impl PreauthKey {
         let api = Api::<Pod>::namespaced(client.clone(), &namespace);
         let pod_name = first_pod.name_unchecked();
 
-        let mut proc = api.exec(&pod_name, cmd, &AttachParams::default()).await?;
-        let handle = proc.take_status().unwrap().await.unwrap();
-        let status = handle.status.unwrap_or_else(|| "Unknown".into());
-
-        if &status != "Success" {
-            let mut stderr = String::new();
-            proc.stderr()
-                .unwrap()
-                .read_to_string(&mut stderr)
-                .await
-                .unwrap();
-
-            return Err(anyhow!("non success exit status: {:?} output: {}", status, stderr).into());
-        }
+        api.exec_with_output(&pod_name, cmd)
+            .await
+            .map_err(|stderr| anyhow!("error revoking preauth key: {stderr}"))?;
 
         Ok(())
     }
@@ -200,7 +178,6 @@ async fn revoke_preauth_key(
 ) -> Result<(), Error> {
     let client = ctx.client.clone();
 
-    let name = resource.name_unchecked();
     let namespace = resource.namespace().unwrap_or_default();
     let secret_name = resource.secret_name();
 

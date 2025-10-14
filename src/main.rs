@@ -1,5 +1,4 @@
 use clap::{Parser, Subcommand};
-use k8s_openapi::List;
 use kube::{Client, CustomResourceExt};
 use kubus::{Operator, print_crds};
 use std::fmt::Debug;
