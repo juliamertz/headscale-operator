@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
 use k8s_openapi::List;
 use kube::{Client, CustomResourceExt};
-use kubus::Operator;
+use kubus::{Operator, print_crds};
 use std::fmt::Debug;
 use std::io::Write;
 use thiserror::Error;
@@ -54,16 +54,8 @@ async fn main() -> Result<(), Error> {
     tracing_subscriber::fmt().init();
 
     match opts.command.unwrap_or_default() {
-        Command::Crd => {
-            let items = vec![Headscale::crd(), ACLPolicy::crd(), PreauthKey::crd()];
-            let list = List {
-                items,
-                ..Default::default()
-            };
-            let yaml = serde_yaml::to_string(&list).unwrap();
-            let mut stdout = std::io::stdout();
-            stdout.write_all(yaml.as_bytes())?;
-        }
+        Command::Crd => print_crds![Headscale, ACLPolicy, PreauthKey],
+
         Command::Run => {
             let client = Client::try_default().await.unwrap();
             let state = State {};
