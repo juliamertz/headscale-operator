@@ -40,7 +40,7 @@ impl ACLPolicy {
     }
 }
 
-#[kubus(event = Apply, finalizer = "kubus.io/acl-policy-finalizer")]
+#[kubus(event = Apply, finalizer = "headscale.juliamertz.dev/acl-policy-finalizer")]
 async fn create_acl_policy(policy: Arc<ACLPolicy>, ctx: Arc<Context<State>>) -> Result<(), Error> {
     let client = ctx.client.clone();
 
@@ -49,7 +49,7 @@ async fn create_acl_policy(policy: Arc<ACLPolicy>, ctx: Arc<Context<State>>) -> 
     Ok(())
 }
 
-#[kubus(event = Delete, finalizer = "kubus.io/acl-policy-finalizer")]
+#[kubus(event = Delete, finalizer = "headscale.juliamertz.dev/acl-policy-finalizer")]
 async fn delete_acl_policy(policy: Arc<ACLPolicy>, ctx: Arc<Context<State>>) -> Result<(), Error> {
     let client = ctx.client.clone();
     let name = policy.name_unchecked();

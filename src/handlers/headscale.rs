@@ -184,7 +184,7 @@ impl Headscale {
     }
 }
 
-#[kubus(event = Apply, finalizer = "kubus.io/headscale-finalizer")]
+#[kubus(event = Apply, finalizer = "headscale.juliamertz.dev/headscale-finalizer")]
 pub async fn deploy_headscale(
     headscale: Arc<Headscale>,
     ctx: Arc<Context<State>>,
@@ -206,7 +206,7 @@ pub async fn deploy_headscale(
     Ok(())
 }
 
-#[kubus(event = Delete, finalizer = "kubus.io/headscale-finalizer")]
+#[kubus(event = Delete, finalizer = "headscale.juliamertz.dev/headscale-finalizer")]
 pub async fn cleanup_headscale(
     headscale: Arc<Headscale>,
     ctx: Arc<Context<State>>,

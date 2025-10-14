@@ -15,7 +15,7 @@ pub struct Rule {
 }
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
-#[kube(group = "kubus.io", version = "v1", kind = "ACLPolicy", namespaced)]
+#[kube(group = "headscale.juliamertz.dev", version = "v1", kind = "ACLPolicy", namespaced)]
 #[serde(rename_all = "camelCase")]
 pub struct ACLPolicySpec {
     pub rules: Vec<Rule>,

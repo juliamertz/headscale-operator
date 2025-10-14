@@ -5,7 +5,7 @@ metadata:
   name: headscale-operator
 rules:
   - apiGroups:
-      - kubus.io
+      - headscale.juliamertz.dev
     resources:
       - headscales
       - aclpolicies
@@ -19,7 +19,7 @@ rules:
       - delete
 
   - apiGroups:
-      - kubus.io
+      - headscale.juliamertz.dev
     resources:
       - headscales/status
       - aclpolicies/status
@@ -29,7 +29,7 @@ rules:
       - patch
 
   - apiGroups:
-      - kubus.io
+      - headscale.juliamertz.dev
     resources:
       - headscales/finalizers
       - aclpolicies/finalizers

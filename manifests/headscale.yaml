@@ -25,7 +25,7 @@ spec:
     size: 1Gi
 
 ---
-apiVersion: kubus.io/v1
+apiVersion: headscale.juliamertz.dev/v1
 kind: Headscale
 metadata:
   name: example

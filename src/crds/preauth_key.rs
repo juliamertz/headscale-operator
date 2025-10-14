@@ -7,7 +7,7 @@ pub struct HeadscaleRef {
 }
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
-#[kube(group = "kubus.io", version = "v1", kind = "PreauthKey", namespaced)]
+#[kube(group = "headscale.juliamertz.dev", version = "v1", kind = "PreauthKey", namespaced)]
 #[serde(default, rename_all = "camelCase")]
 pub struct PreauthKeySpec {
     pub ephemeral: bool,

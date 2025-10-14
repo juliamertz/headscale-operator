@@ -1,4 +1,4 @@
-apiVersion: kubus.io/v1
+apiVersion: headscale.juliamertz.dev/v1
 kind: PreauthKey
 metadata:
   name: example

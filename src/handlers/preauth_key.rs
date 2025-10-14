@@ -147,7 +147,7 @@ impl PreauthKey {
     }
 }
 
-#[kubus(event = Apply, finalizer = "kubus.io/preauth-key-finalizer")]
+#[kubus(event = Apply, finalizer = "headscale.juliamertz.dev/preauth-key-finalizer")]
 async fn create_preauth_key(
     resource: Arc<PreauthKey>,
     ctx: Arc<Context<State>>,
@@ -171,7 +171,7 @@ async fn create_preauth_key(
     Ok(())
 }
 
-#[kubus(event = Delete, finalizer = "kubus.io/preauth-key-finalizer")]
+#[kubus(event = Delete, finalizer = "headscale.juliamertz.dev/preauth-key-finalizer")]
 async fn revoke_preauth_key(
     resource: Arc<PreauthKey>,
     ctx: Arc<Context<State>>,
