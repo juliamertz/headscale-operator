@@ -45,24 +45,6 @@
         "type": "github"
       }
     },
-    "flake-utils": {
-      "inputs": {
-        "systems": "systems"
-      },
-      "locked": {
-        "lastModified": 1731533236,
-        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
-        "type": "github"
-      },
-      "original": {
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "type": "github"
-      }
-    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1758294315,
@@ -115,10 +97,10 @@
       "inputs": {
         "crane": "crane",
         "filter": "filter",
-        "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs",
         "rust-overlay": "rust-overlay",
-        "steiger": "steiger"
+        "steiger": "steiger",
+        "systems": "systems"
       }
     },
     "rust-overlay": {
@@ -170,16 +152,15 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1758312375,
-        "narHash": "sha256-oysZOFyRTZptN8mi3AQ82NFrrGkssgbMQyUaAGduias=",
+        "lastModified": 1759216489,
+        "narHash": "sha256-RxuK2mI2zKMkgxSglkI0UDR5bjNOlaQWbOC7fzXAhkk=",
         "owner": "brainhivenl",
         "repo": "steiger",
-        "rev": "7c3e7ab945b92215ce6275f1aa8bd0c4dd5e9a63",
+        "rev": "e0df4934506c55ecf5bb9af75c182c4a6a38982f",
         "type": "github"
       },
       "original": {
         "owner": "brainhivenl",
-        "ref": "feat/nix-force-host-platform",
         "repo": "steiger",
         "type": "github"
       }

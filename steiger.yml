@@ -1,9 +1,9 @@
 build:
   services:
     type: nix
-    forceHostPlatform: true
+    platformStrategy: crossSystem
     packages:
-      headscale-operator: image
+      headscale-operator: headscale-operator
 
 profiles:
   local:
