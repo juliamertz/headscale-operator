@@ -8,10 +8,11 @@ cargo run -- crd | kubectl apply -f-
 
 ## Todo
 
-- [x] Headscale statefulset
+- [x] Headscale
 - [x] Aclpolicy
-- [x] Preauth keys
+- [x] PreauthKey
+- [ ] User
 - [ ] Subnet router
-- [ ] Tailscale sidecar
 - [ ] Api server proxy
+- [ ] Tailscale sidecar
 
