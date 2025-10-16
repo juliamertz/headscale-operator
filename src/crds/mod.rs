@@ -5,7 +5,8 @@ pub use serde::{Deserialize, Serialize};
 pub mod aclpolicy;
 pub mod headscale;
 pub mod preauth_key;
-
+pub mod user;
+ 
 pub use aclpolicy::ACLPolicy;
 pub use headscale::Headscale;
 pub use preauth_key::PreauthKey;

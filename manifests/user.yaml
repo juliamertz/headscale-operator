@@ -1,0 +1,8 @@
+apiVersion: headscale.juliamertz.dev/v1
+kind: User
+metadata:
+  name: julia
+spec:
+  displayName: Julia
+  headscaleRef:
+    name: example

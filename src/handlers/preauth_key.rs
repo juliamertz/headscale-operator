@@ -1,6 +1,3 @@
-use crate::ext::PodOwner;
-use anyhow::anyhow;
-
 use super::*;
 
 impl PreauthKey {
@@ -21,7 +18,7 @@ impl PreauthKey {
     }
 
     async fn generate_key(&self, client: Client) -> Result<String, Error> {
-        let namespace = self.namespace().unwrap();
+        let namespace = self.namespace_any();
 
         let user_id = self
             .spec
@@ -41,7 +38,8 @@ impl PreauthKey {
             cmd.push("--reusable".into());
         }
 
-        let headscale = self.spec
+        let headscale = self
+            .spec
             .headscale_ref
             .resolve(client.clone(), &namespace)
             .await?;

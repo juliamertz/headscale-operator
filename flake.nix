@@ -82,6 +82,8 @@
               nix-eval-jobs
               steiger.packages.${system}.default
             ]);
+
+          RUST_LOG = "info,headscale_operator=debug";
         };
       }
     );

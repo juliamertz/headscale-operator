@@ -1,7 +1,4 @@
-use std::fmt::Debug;
-
-use anyhow::anyhow;
-use kube::api::ListParams;
+use crate::{handlers::user::UserData, helper::CmdBuilder};
 
 use super::*;
 
@@ -254,9 +251,35 @@ impl Headscale {
             .cloned()
             .with_context(|| format!("no pods found for {statefulset_name}"))?;
 
-        api.exec_with_output(&pod.name_unchecked(), command)
+        let mut cmd: Vec<_> = ["headscale", "-o", "json-line"]
+            .into_iter()
+            .map(String::from)
+            .collect();
+
+        cmd.extend_from_slice(
+            command
+                .into_iter()
+                .map(Into::into)
+                .collect::<Vec<String>>()
+                .as_slice(),
+        );
+
+        api.exec_with_output(&pod.name_unchecked(), cmd)
             .await
             .map_err(|stderr| anyhow!("error executing command in headscale pod: {stderr}").into())
+    }
+
+    pub async fn list_users(&self, client: &Client) -> Result<Vec<UserData>, Error> {
+        let cmd = CmdBuilder::new("headscale")
+            .arg("users")
+            .arg("list")
+            .option_arg("--output", Some("json-line"))
+            .collect();
+
+        let stdout = self.exec(client, cmd).await?;
+        let output = serde_json::from_str(&stdout)?;
+
+        Ok(output)
     }
 }
 

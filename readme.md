@@ -11,7 +11,7 @@ cargo run -- crd | kubectl apply -f-
 - [x] Headscale
 - [x] Aclpolicy
 - [x] PreauthKey
-- [ ] User
+- [x] User
 - [ ] Subnet router
 - [ ] Api server proxy
 - [ ] Tailscale sidecar

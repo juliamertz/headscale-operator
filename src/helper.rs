@@ -5,9 +5,52 @@ use k8s_openapi_ext::appsv1::StatefulSet;
 use k8s_openapi_ext::corev1::Pod;
 use kube::api::{AttachParams, Execute, ListParams};
 use kube::core::Selector;
-use kube::{Api, Client, Resource, ResourceExt};
+use kube::{Api, Client, Resource, ResourceExt as _};
 use serde::de::DeserializeOwned;
 use tokio::io::AsyncReadExt;
+
+#[derive(Debug, Default, Clone)]
+pub struct CmdBuilder {
+    buf: Vec<String>,
+}
+
+impl CmdBuilder {
+    pub fn new(bin: impl ToString) -> Self {
+        let buf = vec![bin.to_string()];
+        Self { buf }
+    }
+
+    pub fn arg(mut self, arg: impl ToString) -> Self {
+        self.buf.push(arg.to_string());
+        self
+    }
+
+    pub fn option_arg(self, name: impl ToString, arg: Option<impl ToString>) -> Self {
+        if let Some(arg) = arg {
+            self.arg(name).arg(arg)
+        } else {
+            self
+        }
+    }
+
+    pub fn collect(self) -> Vec<String> {
+        self.buf
+    }
+}
+
+#[async_trait]
+pub trait ResourceExt {
+    fn namespace_any(&self) -> String;
+}
+
+impl<K> ResourceExt for K
+where
+    K: Resource,
+{
+    fn namespace_any(&self) -> String {
+        self.namespace().unwrap_or_else(|| "default".to_string())
+    }
+}
 
 #[async_trait]
 pub trait ExecuteExt {

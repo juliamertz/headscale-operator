@@ -1,19 +1,25 @@
 use clap::{Parser, Subcommand};
+use kube::api::ObjectMeta;
 use kube::{Client, CustomResourceExt};
 use kubus::{Operator, print_crds};
 use std::fmt::Debug;
 use std::io::Write;
 use thiserror::Error;
+use tracing_subscriber::EnvFilter;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 
 pub(crate) mod crds;
-pub(crate) mod ext;
 pub(crate) mod handlers;
+pub(crate) mod helper;
 
 use crds::*;
 
 use crate::handlers::aclpolicy::{create_acl_policy, delete_acl_policy};
 use crate::handlers::headscale::{cleanup_headscale, deploy_headscale};
 use crate::handlers::preauth_key::{create_preauth_key, revoke_preauth_key};
+use crate::handlers::user::{create_user, destroy_user};
+use crate::handlers::{HeadscaleSpec, User};
 
 #[derive(Debug, Error)]
 enum Error {
@@ -50,10 +56,14 @@ pub struct State {}
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     let opts = Cli::parse();
-    tracing_subscriber::fmt().init();
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer())
+        .with(EnvFilter::from_default_env())
+        .try_init()
+        .unwrap();
 
     match opts.command.unwrap_or_default() {
-        Command::Crd => print_crds![Headscale, ACLPolicy, PreauthKey],
+        Command::Crd => print_crds![Headscale, ACLPolicy, PreauthKey, User],
 
         Command::Run => {
             let client = Client::try_default().await.unwrap();
@@ -61,6 +71,8 @@ async fn main() -> Result<(), Error> {
 
             Operator::builder()
                 .with_context((client, state))
+                .handler(create_user)
+                .handler(destroy_user)
                 .handler(deploy_headscale)
                 .handler(cleanup_headscale)
                 .handler(create_acl_policy)
