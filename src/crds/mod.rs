@@ -6,10 +6,17 @@ pub mod aclpolicy;
 pub mod headscale;
 pub mod preauth_key;
 pub mod user;
- 
+
 pub use aclpolicy::ACLPolicy;
 pub use headscale::Headscale;
 pub use preauth_key::PreauthKey;
+
+/// serialized timestamp format that headscale uses
+#[derive(Debug, Default, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct Timestamp {
+    seconds: u64,
+    nanos: u64,
+}
 
 pub fn preserve_unknown_fields(_gen: &mut schemars::SchemaGenerator) -> schemars::Schema {
     schemars::json_schema!({ "x-kubernetes-preserve-unknown-fields": true })

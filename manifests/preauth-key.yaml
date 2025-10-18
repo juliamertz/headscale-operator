@@ -6,9 +6,7 @@ spec:
   ephemeral: true
   reusable: true
   expiration: 99999h
-  targetSecret: tailscale-auth
-  userId: 1
-  headscaleRef:
-    name: example
-    # namespace: ""
+  targetSecret: tailscale-agent-auth
+  user:
+    name: kubernetes 
 

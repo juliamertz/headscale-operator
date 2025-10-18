@@ -30,7 +30,7 @@ impl ACLPolicy {
             acls: &self.spec.rules,
         };
 
-        Ok(ConfigMap::new(&name)
+        Ok(ConfigMap::new(name)
             .namespace(&namespace)
             .labels(self.common_labels(name))
             .owner(owner_ref.clone())

@@ -15,6 +15,7 @@ pub struct CmdBuilder {
 }
 
 impl CmdBuilder {
+    #[allow(dead_code)]
     pub fn new(bin: impl ToString) -> Self {
         let buf = vec![bin.to_string()];
         Self { buf }
@@ -31,6 +32,10 @@ impl CmdBuilder {
         } else {
             self
         }
+    }
+
+    pub fn bool_arg(self, name: impl ToString, cond: bool) -> Self {
+        if cond { self.arg(name) } else { self }
     }
 
     pub fn collect(self) -> Vec<String> {

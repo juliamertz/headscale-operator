@@ -1,5 +1,4 @@
 use clap::{Parser, Subcommand};
-use kube::api::ObjectMeta;
 use kube::{Client, CustomResourceExt};
 use kubus::{Operator, print_crds};
 use std::fmt::Debug;
@@ -15,11 +14,11 @@ pub(crate) mod helper;
 
 use crds::*;
 
+use crate::handlers::User;
 use crate::handlers::aclpolicy::{create_acl_policy, delete_acl_policy};
 use crate::handlers::headscale::{cleanup_headscale, deploy_headscale};
 use crate::handlers::preauth_key::{create_preauth_key, revoke_preauth_key};
 use crate::handlers::user::{create_user, destroy_user};
-use crate::handlers::{HeadscaleSpec, User};
 
 #[derive(Debug, Error)]
 enum Error {

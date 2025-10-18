@@ -15,4 +15,4 @@ cargo run -- crd | kubectl apply -f-
 - [ ] Subnet router
 - [ ] Api server proxy
 - [ ] Tailscale sidecar
-
+- [ ] Figure out how to connect to headscale GRPC api

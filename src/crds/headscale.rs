@@ -13,7 +13,12 @@ pub struct TLSOptions {
 }
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
-#[kube(group = "headscale.juliamertz.dev", version = "v1", kind = "Headscale", namespaced)]
+#[kube(
+    group = "headscale.juliamertz.dev",
+    version = "v1",
+    kind = "Headscale",
+    namespaced
+)]
 #[kube(status = "HeadscaleStatus")]
 #[kube(
     printcolumn = r#"{"name": "Ready", "type": "boolean", "jsonPath": ".status.ready"}"#,
@@ -40,4 +45,3 @@ pub struct HeadscaleRef {
     pub name: String,
     pub namespace: Option<String>,
 }
-

@@ -1,4 +1,32 @@
+use crate::helper::CmdBuilder;
+
 use super::*;
+
+impl From<UserData> for UserStatus {
+    fn from(data: UserData) -> Self {
+        UserStatus {
+            id: data.id,
+            name: data.name,
+            created_at: data.created_at,
+            email: data.email,
+            display_name: data.display_name,
+            picture_url: data.picture_url,
+        }
+    }
+}
+
+impl From<PreauthKeyData> for PreauthKeyStatus {
+    fn from(data: PreauthKeyData) -> Self {
+        PreauthKeyStatus {
+            id: data.id,
+            user: data.user.into(),
+            reusable: data.reusable,
+            ephemeral: data.ephemeral,
+            expiration: data.expiration,
+            created_at: data.created_at,
+        }
+    }
+}
 
 impl PreauthKey {
     fn common_labels(&self, name: impl ToString) -> impl Iterator<Item = (&'static str, String)> {
@@ -17,64 +45,51 @@ impl PreauthKey {
         .into_iter()
     }
 
-    async fn generate_key(&self, client: Client) -> Result<String, Error> {
+    async fn generate_key(&self, client: Client) -> Result<PreauthKeyData, Error> {
         let namespace = self.namespace_any();
+        let user = self.spec.user.resolve(client.clone(), &namespace).await?;
+        let user_id = user.id().context("user is missing an id")?;
 
-        let user_id = self
-            .spec
-            .user_id
-            .context("user id field must be set")?
-            .to_string();
-
-        let mut cmd: Vec<String> = ["headscale", "preauthkeys", "create", "--user", &user_id]
-            .into_iter()
-            .map(Into::into)
+        let cmd = CmdBuilder::default()
+            .arg("preauthkeys")
+            .arg("create")
+            .option_arg("--user", Some(user_id))
+            .bool_arg("--ephemeral", self.spec.ephemeral)
+            .bool_arg("--reusable", self.spec.reusable)
             .collect();
 
-        if self.spec.ephemeral {
-            cmd.push("--ephemeral".into());
-        }
-        if self.spec.reusable {
-            cmd.push("--reusable".into());
-        }
-
-        let headscale = self
+        let headscale = user
             .spec
             .headscale_ref
-            .resolve(client.clone(), &namespace)
+            .resolve(client.clone(), &user.namespace_any())
             .await?;
 
         let stdout = headscale.exec(&client, cmd).await?;
-        let authkey = stdout.trim().to_string();
-
+        let authkey = serde_json::from_str(stdout.trim())?;
         Ok(authkey)
     }
 
     async fn revoke_key(&self, client: Client, key: &str) -> Result<(), Error> {
         let namespace = self.namespace().unwrap();
-        let stateful_set_name = self
+        let user = self.spec.user.resolve(client.clone(), &namespace).await?;
+        let user_id = user.id().context("user is missing an id")?;
+
+        let headscale = user
             .spec
             .headscale_ref
-            .resolve(client.clone(), &namespace)
-            .await?
-            .stateful_set_name();
+            .resolve(client.clone(), &user.namespace_any())
+            .await?;
 
         let api: Api<StatefulSet> = Api::namespaced(client.clone(), &namespace);
-        let stateful_set = api.get(&stateful_set_name).await?;
-
+        let stateful_set = api.get(&headscale.stateful_set_name()).await?;
         let first_pod = stateful_set.get_pod(client.clone()).await?.unwrap();
-        let user_id = self
-            .spec
-            .user_id
-            .context("user id field must be set")?
-            .to_string();
 
         let cmd: Vec<String> = [
             "headscale",
             "preauthkeys",
             "revoke",
             "--user",
-            &user_id,
+            &user_id.to_string(),
             key,
         ]
         .into_iter()
@@ -99,7 +114,7 @@ impl PreauthKey {
             .unwrap_or_else(|| format!("headscale-preauth-{name}"))
     }
 
-    fn render_secret(&self, preauth_key: String) -> Secret {
+    fn render_secret(&self, preauth_key: impl ToString) -> Secret {
         let namespace = self.namespace().unwrap_or_default();
         let owner_ref = self.owner_ref(&()).unwrap_or_default();
         let secret_name = self.secret_name();
@@ -119,7 +134,8 @@ async fn create_preauth_key(
 ) -> Result<(), Error> {
     let client = ctx.client.clone();
 
-    let namespace = resource.namespace().unwrap();
+    let name = resource.name_any();
+    let namespace = resource.namespace_any();
     let secret_name = resource.secret_name();
 
     let exists = Secret::new(&secret_name)
@@ -128,9 +144,20 @@ async fn create_preauth_key(
         .await?;
 
     if !exists {
-        let preauth_key = resource.generate_key(client.clone()).await?;
-        let secret = resource.render_secret(preauth_key).apply(&client).await?;
+        let data = resource.generate_key(client.clone()).await?;
+
+        let secret = resource.render_secret(&data.key);
         secret.apply(&client).await?;
+
+        let status: PreauthKeyStatus = data.into();
+        let api = Api::<PreauthKey>::namespaced(client.clone(), &namespace);
+        api.patch_status(
+            &name,
+            &PatchParams::default(),
+            &Patch::Merge(json!({ "status": status })),
+        )
+        .await?;
+        tracing::info!("succesfully patched status");
     }
 
     Ok(())

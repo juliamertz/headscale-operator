@@ -1,4 +1,4 @@
-use crate::{handlers::user::UserData, helper::CmdBuilder};
+use crate::helper::CmdBuilder;
 
 use super::*;
 
@@ -269,8 +269,9 @@ impl Headscale {
             .map_err(|stderr| anyhow!("error executing command in headscale pod: {stderr}").into())
     }
 
-    pub async fn list_users(&self, client: &Client) -> Result<Vec<UserData>, Error> {
-        let cmd = CmdBuilder::new("headscale")
+    #[allow(dead_code)]
+    pub async fn list_users(&self, client: &Client) -> Result<Vec<UserStatus>, Error> {
+        let cmd = CmdBuilder::default()
             .arg("users")
             .arg("list")
             .option_arg("--output", Some("json-line"))

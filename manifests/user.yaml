@@ -1,8 +1,7 @@
 apiVersion: headscale.juliamertz.dev/v1
 kind: User
 metadata:
-  name: julia
+  name: kubernetes
 spec:
-  displayName: Julia
   headscaleRef:
     name: example

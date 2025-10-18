@@ -1125,9 +1125,9 @@ dependencies = [
 
 [[package]]
 name = "kubus"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f66043c3ff976a67fe712717a6c478469b3b19d03ef182f4f32c223a6ac8842"
+checksum = "f017db1354acb673aff65edfb869b21100627f09385ad1c3cc8aed584b2c852f"
 dependencies = [
  "async-trait",
  "futures",
@@ -1144,9 +1144,9 @@ dependencies = [
 
 [[package]]
 name = "kubus_derive"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d08f4adc81168bb35ea142a1bd7fbc200ed302a0e4bbb2da20aa71cd035b5953"
+checksum = "bef8cb0d659997e7bbf9155b8142b4b0ec3e81877e474c5f1dec5b6b23537b7f"
 dependencies = [
  "proc-macro2",
  "quote",

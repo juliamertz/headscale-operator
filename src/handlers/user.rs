@@ -2,13 +2,25 @@ use crate::helper::CmdBuilder;
 
 use super::*;
 
-#[derive(Debug, Deserialize)]
-pub struct UserData {
-    pub id: u32,
+impl UserRef {
+    pub async fn resolve(&self, client: Client, namespace: impl ToString) -> kube::Result<User> {
+        let namespace = self
+            .namespace
+            .clone()
+            .unwrap_or_else(|| namespace.to_string());
+
+        let api = Api::<User>::namespaced(client, &namespace);
+
+        api.get(&self.name).await
+    }
 }
 
 impl User {
-    async fn create(&self, client: &Client) -> Result<u32, Error> {
+    pub fn id(&self) -> Option<u32> {
+        self.status.as_ref().map(|status| status.id)
+    }
+
+    async fn create(&self, client: &Client) -> Result<UserData, Error> {
         let name = self.name_any();
         let namespace = self.namespace_any();
         let headscale = self
@@ -26,13 +38,12 @@ impl User {
             .option_arg("--email", self.spec.email.as_ref())
             .collect();
 
-        let stdout = headscale.exec(&client, cmd).await?;
-        let output: UserData = serde_json::from_str(&stdout)?;
-        Ok(output.id)
+        let stdout = headscale.exec(client, cmd).await?;
+        Ok(serde_json::from_str(&stdout)?)
     }
 
     async fn destroy(&self, client: &Client) -> Result<(), Error> {
-        let Some(status) = self.status else {
+        let Some(ref status) = self.status else {
             return Ok(());
         };
 
@@ -64,7 +75,7 @@ pub async fn create_user(user: Arc<User>, ctx: Arc<Context<State>>) -> Result<()
 
     // TODO: we should check if the user actually exists instead of assuming
     if let Some(ref status) = user.status {
-        tracing::info!(
+        tracing::debug!(
             { user = &name, id = &status.id },
             "user already exists, doing nothing"
         );
@@ -73,20 +84,16 @@ pub async fn create_user(user: Arc<User>, ctx: Arc<Context<State>>) -> Result<()
 
     tracing::info!({ user = &name }, "creating user");
 
-    let user_id = user.create(client).await?;
-    let patch = json!({
-       "status": {
-            "id": user_id
-        }
-    });
+    let data = user.create(client).await?;
+    let status: UserStatus = data.into();
 
-    tracing::info!({ user = &name, id = &user_id }, "user created");
+    tracing::info!({ user = &name, id = &status.id }, "user created");
 
     let api = Api::<User>::namespaced(client.clone(), &namespace);
     api.patch_status(
         &name,
         &PatchParams::apply(env!("CARGO_PKG_NAME")),
-        &Patch::Merge(&patch),
+        &Patch::Merge(json!({ "status": status })),
     )
     .await?;
 

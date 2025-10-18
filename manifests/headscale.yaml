@@ -9,7 +9,7 @@ spec:
   secretName: headscale-tls
   issuerRef:
     kind: ClusterIssuer
-    name: letsencrypt-prod
+    name: selfsigned # for testing
 
 ---
 apiVersion: postgresql.cnpg.io/v1
