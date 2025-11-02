@@ -1,7 +1,7 @@
 use super::*;
 
 fn default_headscale_image() -> String {
-    "headscale/headscale:v0.26.1".to_string()
+    "headscale/headscale:v0.27.0".to_string()
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
