@@ -19,20 +19,26 @@ impl HeadscaleRef {
     }
 }
 
-#[derive(Deserialize)]
-#[serde(default)]
-struct Config {
-    listen_addr: SocketAddr,
-    metrics_listen_addr: SocketAddr,
+fn default_listen_addr() -> SocketAddr {
+    "0.0.0.0:8080".parse().unwrap()
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            listen_addr: "0.0.0.0:8080".parse().unwrap(),
-            metrics_listen_addr: "0.0.0.0:9090".parse().unwrap(),
-        }
-    }
+fn default_metrics_listen_addr() -> SocketAddr {
+    "0.0.0.0:9090".parse().unwrap()
+}
+
+fn default_grpc_listen_addr() -> SocketAddr {
+    "0.0.0.0:50443".parse().unwrap()
+}
+
+#[derive(Deserialize)]
+struct Config {
+    #[serde(default = "default_listen_addr")]
+    listen_addr: SocketAddr,
+    #[serde(default = "default_metrics_listen_addr")]
+    metrics_listen_addr: SocketAddr,
+    #[serde(default = "default_grpc_listen_addr")]
+    grpc_listen_addr: SocketAddr,
 }
 
 struct Volumes {
@@ -47,17 +53,6 @@ struct Ports {
     metrics: u16,
     derp: u16,
     grpc: u16,
-}
-
-impl Default for Ports {
-    fn default() -> Self {
-        Self {
-            http: 8080,
-            metrics: 9090,
-            derp: 3478,
-            grpc: 50443,
-        }
-    }
 }
 
 fn gen_private_key() -> String {
@@ -91,7 +86,7 @@ impl Headscale {
         Ports {
             http: config.listen_addr.port(),
             metrics: config.metrics_listen_addr.port(),
-            grpc: 50443,
+            grpc: config.grpc_listen_addr.port(),
             derp: 3478,
         }
     }
