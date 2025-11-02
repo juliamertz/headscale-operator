@@ -2,8 +2,6 @@ use crate::helper::CmdBuilder;
 
 use super::*;
 
-const DEFAULT_HEADSCALE_IMAGE: &str = "headscale/headscale:v0.26.1";
-
 impl HeadscaleRef {
     pub async fn resolve(
         &self,
@@ -48,6 +46,7 @@ struct Ports {
     http: u16,
     metrics: u16,
     derp: u16,
+    grpc: u16,
 }
 
 impl Default for Ports {
@@ -56,6 +55,7 @@ impl Default for Ports {
             http: 8080,
             metrics: 9090,
             derp: 3478,
+            grpc: 50443,
         }
     }
 }
@@ -91,6 +91,7 @@ impl Headscale {
         Ports {
             http: config.listen_addr.port(),
             metrics: config.metrics_listen_addr.port(),
+            grpc: 50443,
             derp: 3478,
         }
     }
@@ -130,12 +131,13 @@ impl Headscale {
 
         let pod_spec = PodSpec::container(
             Container::new("headscale")
-                .image(DEFAULT_HEADSCALE_IMAGE)
+                .image(&self.spec.deployment.image)
                 .command(["headscale", "serve"])
                 .ports([
                     ContainerPort::tcp(ports.http).name("http"),
                     ContainerPort::tcp(ports.metrics).name("metrics"),
                     ContainerPort::udp(ports.derp).name("derp"),
+                    ContainerPort::tcp(ports.grpc).name("grpc"),
                 ])
                 .env(self.spec.deployment.env.clone())
                 .volume_mounts([
@@ -224,6 +226,7 @@ impl Headscale {
                 ServicePort::tcp("https", ports.http),
                 ServicePort::tcp("metrics", ports.metrics),
                 ServicePort::udp("derp", ports.derp),
+                ServicePort::tcp("grpc", ports.grpc),
             ],
         )
         .namespace(&namespace)

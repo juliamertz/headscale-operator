@@ -1,8 +1,15 @@
 use super::*;
 
+fn default_headscale_image() -> String {
+    "headscale/headscale:v0.26.1".to_string()
+}
+
 #[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
 #[serde(default, rename_all = "camelCase")]
 pub struct HeadscaleDeploymentOptions {
+    #[serde(default = "default_headscale_image")]
+    pub image: String,
+    #[serde(default)]
     pub env: Vec<k8s_openapi_ext::corev1::EnvVar>,
 }
 
