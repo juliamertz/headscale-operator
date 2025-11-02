@@ -293,6 +293,8 @@ pub async fn deploy_headscale(
     ctx: Arc<Context<State>>,
 ) -> Result<(), Error> {
     let client = &ctx.client;
+    let name = headscale.name_any();
+    let namespace = headscale.namespace_any();
 
     let ports = headscale.get_ports();
     let keys = headscale.render_secret();
@@ -307,6 +309,17 @@ pub async fn deploy_headscale(
     acls.apply_if_not_exists(client).await?;
     stateful_set.apply(client).await?;
     service.apply(client).await?;
+
+    let api = Api::<Headscale>::namespaced(client.clone(), &namespace);
+    api.patch_status(
+        &name,
+        &PatchParams::default(),
+        &Patch::Merge(json!({ "status": {
+            "ready": true,
+            "message": "Headscale has been deployed",
+        }})),
+    )
+    .await?;
 
     Ok(())
 }
