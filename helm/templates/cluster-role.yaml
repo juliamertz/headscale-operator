@@ -9,6 +9,8 @@ rules:
     resources:
       - headscales
       - aclpolicies
+      - users
+      - preauthkeys
     verbs:
       - get
       - list
@@ -23,6 +25,8 @@ rules:
     resources:
       - headscales/status
       - aclpolicies/status
+      - users/status
+      - preauthkeys/status
     verbs:
       - get
       - update
@@ -33,6 +37,8 @@ rules:
     resources:
       - headscales/finalizers
       - aclpolicies/finalizers
+      - users/finalizers
+      - preauthkeys/finalizers
     verbs:
       - update
 
@@ -95,3 +101,20 @@ rules:
     verbs:
       - create
       - patch
+
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+      - watch
+      
+  - apiGroups:
+      - ""
+    resources:
+      - pods/exec
+    verbs:
+      - create
+      - get
