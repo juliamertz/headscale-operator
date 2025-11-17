@@ -7,6 +7,7 @@ use kube::api::{AttachParams, Execute, ListParams};
 use kube::core::Selector;
 use kube::{Api, Client, Resource, ResourceExt as _};
 use serde::de::DeserializeOwned;
+use thiserror::Error;
 use tokio::io::AsyncReadExt;
 
 #[derive(Debug, Default, Clone)]
@@ -57,9 +58,21 @@ where
     }
 }
 
+#[derive(Debug, Error)]
+pub enum ExecError {
+    #[error("failed to join attached process: {0}")]
+    Kube(#[from] kube::Error),
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("non-success exit status: {0}, out: {1}")]
+    Exit(i32, String),
+    #[error("unknown-success exit status: {0}, out: {1}")]
+    UnknownStatus(i32, String),
+}
+
 #[async_trait]
 pub trait ExecuteExt {
-    async fn exec_with_output<I, T>(&self, name: &str, command: I) -> Result<String, String>
+    async fn exec_with_output<I, T>(&self, name: &str, command: I) -> Result<String, ExecError>
     where
         I: IntoIterator<Item = T> + Debug + Send + Sync + 'static,
         T: Into<String>;
@@ -70,7 +83,7 @@ impl<K> ExecuteExt for Api<K>
 where
     K: Resource + Execute + Clone + DeserializeOwned + Send + Sync + 'static,
 {
-    async fn exec_with_output<I, T>(&self, name: &str, command: I) -> Result<String, String>
+    async fn exec_with_output<I, T>(&self, name: &str, command: I) -> Result<String, ExecError>
     where
         I: IntoIterator<Item = T> + Debug + Send + Sync + 'static,
         T: Into<String>,
@@ -79,35 +92,36 @@ where
             .stdin(false)
             .stdout(true)
             .stderr(true);
-        let mut process = self.exec(name, command, &attach_params).await.unwrap();
+        let mut process = self.exec(name, command, &attach_params).await?;
 
-        let output = process.take_status().unwrap().await.unwrap();
+        let Some(output) = process
+            .take_status()
+            .expect("status has not been taken")
+            .await
+        else {
+            todo!("no status retrieved");
+        };
 
         let mut buf = String::new();
         match output.status.as_deref() {
             Some("Success") => {
-                process
-                    .stdout()
-                    .unwrap()
-                    .read_to_string(&mut buf)
-                    .await
-                    .map_err(|err| format!("unable to read stdout: {err}"))?;
+                process.stdout().unwrap().read_to_string(&mut buf).await?;
 
                 Ok(buf)
             }
 
             Some("Failure") => {
-                process
-                    .stderr()
-                    .unwrap()
-                    .read_to_string(&mut buf)
-                    .await
-                    .map_err(|err| format!("unable to read stdout: {err}"))?;
+                process.stderr().unwrap().read_to_string(&mut buf).await?;
 
-                Err(buf)
+                Err(ExecError::Exit(output.code.unwrap_or_default(), buf))
             }
 
-            _ => Err("unknown kube response status".to_string()),
+            _ => Err(ExecError::UnknownStatus(
+                output.code.unwrap_or_default(),
+                output
+                    .message
+                    .unwrap_or_else(|| "unknown kube response status".into()),
+            )),
         }
     }
 }
