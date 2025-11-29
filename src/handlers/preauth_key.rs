@@ -54,6 +54,7 @@ impl PreauthKey {
             .arg("preauthkeys")
             .arg("create")
             .option_arg("--user", Some(user_id))
+            .option_arg("--expiration", Some(&self.spec.expiration))
             .bool_arg("--ephemeral", self.spec.ephemeral)
             .bool_arg("--reusable", self.spec.reusable)
             .collect();
