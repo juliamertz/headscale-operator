@@ -1,35 +1,8 @@
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: headscale-tls
-  namespace: headscale-operator
-spec:
-  dnsNames:
-    - headscale.domain.com
-  secretName: headscale-tls
-  issuerRef:
-    kind: ClusterIssuer
-    name: selfsigned # for testing
-
----
-apiVersion: postgresql.cnpg.io/v1
-kind: Cluster
-metadata:
-  name: headscale-db
-  namespace: headscale-operator
-spec:
-  instances: 1
-  primaryUpdateStrategy: unsupervised
-  enableSuperuserAccess: false
-  storage:
-    size: 1Gi
-
 ---
 apiVersion: headscale.juliamertz.dev/v1
 kind: Headscale
 metadata:
   name: example
-  namespace: headscale-operator
 spec:
   tls:
     existingSecret: headscale-tls
