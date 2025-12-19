@@ -34,7 +34,17 @@ spec:
           env:
             - name: RUST_LOG
               value: "info,headscale_operator=debug"
+            - name: TLS_CERT_PATH
+              value: /run/secrets/tls
           imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8443
+              name: webhook
+              protocol: TCP
+          volumeMounts:
+            - name: webhook-tls-certs
+              mountPath: /run/secrets/tls
+              readOnly: true
           resources:
             requests:
               cpu: 10m
@@ -42,3 +52,7 @@ spec:
             limits:
               cpu: 40m
               memory: 80Mi
+      volumes:
+        - name: webhook-tls-certs
+          secret:
+            secretName: webhook-tls

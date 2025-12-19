@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    headscale.juliamertz.dev/inject-tailscale-sidecar: "true"
+    headscale.juliamertz.dev/tailscale-extra-args: --accept-routes --advertise-tags=tag:tailscale-sidecar
+    headscale.juliamertz.dev/tailscale-auth-secret: tailscale-agent-auth
+  name: nginx
+  namespace: headscale
+spec:
+  containers:
+    - image: nginx:1.14.2
+      imagePullPolicy: IfNotPresent
+      name: nginx
+      ports:
+        - containerPort: 80
+          protocol: TCP

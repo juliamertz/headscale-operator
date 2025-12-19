@@ -1,0 +1,28 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: headscale-webhook
+  labels:
+    app.kubernetes.io/name: headscale-operator
+    app.kubernetes.io/part-of: headscale
+  annotations:
+    cert-manager.io/inject-ca-from: "{{ .Release.Namespace }}/webhook-cert"
+webhooks:
+  - name: webhook.example.com
+    failurePolicy: Fail
+    admissionReviewVersions: ["v1"]
+    sideEffects: None
+    timeoutSeconds: 5
+    clientConfig:
+      service:
+        name: headscale-webhook
+        namespace: {{ .Release.Namespace }}
+        path: /mutate
+    rules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations:
+          - CREATE
+        resources: 
+          - pods

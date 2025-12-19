@@ -3,6 +3,7 @@ use kube::{Client, CustomResourceExt};
 use kubus::{Operator, print_crds};
 use std::fmt::Debug;
 use std::io::Write;
+use std::path::PathBuf;
 use thiserror::Error;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
@@ -11,6 +12,7 @@ use tracing_subscriber::util::SubscriberInitExt;
 pub(crate) mod crds;
 pub(crate) mod handlers;
 pub(crate) mod helper;
+pub(crate) mod admission;
 
 use crds::*;
 
@@ -21,7 +23,7 @@ use crate::handlers::preauth_key::{create_preauth_key, revoke_preauth_key};
 use crate::handlers::user::{create_user, destroy_user};
 
 #[derive(Debug, Error)]
-enum Error {
+pub enum Error {
     #[error("kube error: {0}")]
     Kube(#[from] kube::Error),
     #[error("kubus error: {0}")]
@@ -40,6 +42,9 @@ enum Error {
 struct Cli {
     #[command(subcommand)]
     command: Option<Command>,
+
+    #[arg(long, env = "TLS_CERT_PATH")]
+    tls_path: PathBuf,
 }
 
 #[derive(Subcommand, Default)]
@@ -78,6 +83,8 @@ async fn main() -> Result<(), Error> {
                 .handler(delete_acl_policy)
                 .handler(create_preauth_key)
                 .handler(revoke_preauth_key)
+                .with_tls_certs(opts.tls_path)
+                .mutator(admission::sidecar::mutate)
                 .run()
                 .await?
         }

@@ -6,6 +6,6 @@ resources:
   - certificate.yaml
   - database.yaml
   - headscale.yaml
-  - user.yaml
-  - acls.yaml
-  - preauth-key.yaml
+  # - user.yaml
+  # - acls.yaml
+  # - preauth-key.yaml

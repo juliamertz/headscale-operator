@@ -12,7 +12,7 @@ cargo run -- crd | kubectl apply -f-
 - [x] Aclpolicy
 - [x] PreauthKey
 - [x] User
+- [x] Tailscale sidecar
 - [ ] Subnet router
 - [ ] Api server proxy
-- [ ] Tailscale sidecar
 - [ ] Figure out how to connect to headscale GRPC api
