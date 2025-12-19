@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 kube = { version = "2.0.1", features = ["runtime", "derive", "client", "ws"] }
-kubus = "0.4.2"
+kubus = "0.5.0"
 k8s-openapi = { version = "0.26.0", features = ["v1_34", "schemars"] }
 k8s-openapi-ext = "0.26.7"
 schemars = { version = "1.0.4", features = ["raw_value"] }
