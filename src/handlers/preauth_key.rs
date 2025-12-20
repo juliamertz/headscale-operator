@@ -81,7 +81,7 @@ impl PreauthKey {
             .resolve(client.clone(), &user.namespace_any())
             .await?;
 
-        let api: Api<StatefulSet> = Api::namespaced(client.clone(), &namespace);
+        let api: Api<StatefulSet> = Api::namespaced(client.clone(), &headscale.namespace_any());
         let stateful_set = api.get(&headscale.stateful_set_name()).await?;
         let first_pod = stateful_set.get_pod(client.clone()).await?.unwrap();
 
@@ -97,7 +97,7 @@ impl PreauthKey {
         .map(Into::into)
         .collect();
 
-        let api = Api::<Pod>::namespaced(client.clone(), &namespace);
+        let api = Api::<Pod>::namespaced(client.clone(), &stateful_set.namespace_any());
         let pod_name = first_pod.name_unchecked();
 
         api.exec_with_output(&pod_name, cmd)
