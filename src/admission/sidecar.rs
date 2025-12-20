@@ -12,6 +12,8 @@ const ANNOTATION_EXTRA_ARGS: &str = "headscale.juliamertz.dev/tailscale-extra-ar
 const ANNOTATION_IMAGE: &str = "headscale.juliamertz.dev/tailscale-image";
 const ANNOTATION_AUTH_SECRET: &str = "headscale.juliamertz.dev/tailscale-auth-secret";
 
+const DEFAULT_TAILSCALE_IMAGE: &str = "ghcr.io/tailscale/tailscale:v1.92.4";
+
 pub trait ResourceGvkExt {
     fn is(kind: &GroupVersionKind) -> bool;
 }
@@ -61,7 +63,7 @@ fn build_sidecar_patch(
 ) -> Result<json_patch::Patch, Error> {
     let container = serde_json::json!({
         "name": "tailscale-sidecar",
-        "image": image.unwrap_or("ghcr.io/tailscale/tailscale:latest"), // TODO: pin version
+        "image": image.unwrap_or(DEFAULT_TAILSCALE_IMAGE),
         "securityContext": {
             "capabilities": {
                 "add": ["NET_ADMIN"]
