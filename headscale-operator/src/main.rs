@@ -11,6 +11,7 @@ use tracing_subscriber::util::SubscriberInitExt;
 
 pub(crate) mod admission;
 pub(crate) mod crds;
+pub(crate) mod rbac;
 pub(crate) mod handlers;
 pub(crate) mod helper;
 
@@ -39,12 +40,15 @@ pub enum Error {
 #[derive(Parser)]
 #[command(name = "headscale-operator")]
 #[command(about = "Kubernetes operator for the Headscale VPN")]
-struct Cli {
+struct Opts {
     #[command(subcommand)]
     command: Option<Command>,
 
     #[arg(long, env = "TLS_CERT_PATH")]
     tls_path: Option<PathBuf>,
+
+    #[arg(long, env = "CONFIG_MANAGER_IMAGE")]
+    config_manager_image: String,
 }
 
 #[derive(Subcommand, Default)]
@@ -55,11 +59,13 @@ enum Command {
 }
 
 #[derive(Debug, Clone)]
-pub struct State {}
+pub struct State {
+    config_manager_image: String,
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    let opts = Cli::parse();
+    let opts = Opts::parse();
     tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer())
         .with(EnvFilter::from_default_env())
@@ -71,7 +77,9 @@ async fn main() -> Result<(), Error> {
 
         Command::Run => {
             let client = Client::try_default().await.unwrap();
-            let state = State {};
+            let state = State {
+                config_manager_image: opts.config_manager_image,
+            };
 
             let mut operator = Operator::builder()
                 .with_context((client, state))

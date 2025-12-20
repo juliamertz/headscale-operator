@@ -1,0 +1,21 @@
+[package]
+name = "config-manager"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "config-manager"
+path = "src/main.rs"
+
+[dependencies]
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+kube = { workspace = true }
+k8s-openapi = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+clap = { workspace = true }
+nix = { version = "0.30.1", features = ["signal"] }
+futures = "0.3.31"

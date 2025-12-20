@@ -34,6 +34,8 @@ spec:
               value: "info,headscale_operator={{ .Values.deployment.logLevel }}"
             - name: TLS_CERT_PATH
               value: /run/secrets/tls
+            - name: CONFIG_MANAGER_IMAGE
+              value: {{ .Values.steiger.configManager.image }}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8443

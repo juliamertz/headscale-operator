@@ -1,8 +1,11 @@
 use serde_json::Value;
 
 use crate::helper::CmdBuilder;
+use crate::rbac::{ConfigManagerRbac, Rbac};
 
 use super::*;
+
+const ACL_MOUNT_PATH: &str = "/etc/headscale/acls";
 
 impl HeadscaleRef {
     pub async fn resolve(
@@ -93,10 +96,9 @@ impl Headscale {
         }
     }
 
-    fn render_volumes(&self, config: &ConfigMap, acls: &ConfigMap, keys: &Secret) -> Volumes {
+    fn render_volumes(&self, config: &ConfigMap, keys: &Secret) -> Volumes {
         let keys_name = &keys.name_unchecked();
         let config_name = config.name_unchecked();
-        let acls_name = acls.name_unchecked();
         let tls_name = &self
             .spec
             .tls
@@ -107,7 +109,7 @@ impl Headscale {
         let keys = Volume::secret("keys", SecretVolumeSource::secret_name(keys_name));
         let tls = Volume::secret("tls", SecretVolumeSource::secret_name(tls_name));
         let config = Volume::configmap("config", ConfigMapVolumeSource::new(config_name));
-        let acls = Volume::configmap("acls", ConfigMapVolumeSource::new(acls_name));
+        let acls = Volume::emptydir("acls", EmptyDirVolumeSource::default());
 
         Volumes {
             keys,
@@ -121,12 +123,23 @@ impl Headscale {
         format!("headscale-{}", self.name_unchecked())
     }
 
-    fn render_stateful_set(&self, ports: &Ports, volumes: Volumes) -> StatefulSet {
+    fn render_stateful_set(
+        &self,
+        ports: &Ports,
+        volumes: Volumes,
+        config_manager_image: &str,
+    ) -> StatefulSet {
         let name = self.stateful_set_name();
         let namespace = self.namespace().unwrap_or_default();
         let owner_ref = self.owner_ref(&()).unwrap_or_default();
 
-        let pod_spec = PodSpec::container(
+        let config_manager_env = [
+            ("RUST_LOG", "info,config_manager=debug"),
+            ("CONFIGMAP_NAME", &self.acl_configmap_name()),
+            ("MOUNT_PATH", ACL_MOUNT_PATH),
+        ];
+
+        let mut pod_spec = PodSpec::containers([
             Container::new("headscale")
                 .image(&self.spec.deployment.image)
                 .command(["headscale", "serve"])
@@ -143,12 +156,34 @@ impl Headscale {
                     VolumeMount::new("/etc/headscale/config.yaml", &volumes.config)
                         .sub_path("config.yaml")
                         .read_only(),
-                    VolumeMount::new("/etc/headscale/acl.json", &volumes.acls)
-                        .sub_path("acl.json")
-                        .read_only(),
+                    VolumeMount::new(ACL_MOUNT_PATH, &volumes.acls).read_only(),
                 ]),
-        )
-        .volumes([volumes.tls, volumes.keys, volumes.config, volumes.acls]);
+            Container::new("config-manager")
+                .image(config_manager_image)
+                .command(["/bin/config-manager"])
+                .env(config_manager_env.clone())
+                .volume_mounts([VolumeMount::new(ACL_MOUNT_PATH, &volumes.acls)]),
+            // Container::new("debug")
+            //     .image("alpine:latest")
+            //     .command(["sleep", "infinity"])
+            //     .volume_mounts([VolumeMount::new(ACL_MOUNT_PATH, &volumes.acls)]),
+        ])
+        .volumes([
+            volumes.tls,
+            volumes.keys,
+            volumes.config,
+            volumes.acls.clone(),
+        ])
+        .service_account_name(self.config_manager_service_account_name());
+
+        pod_spec.share_process_namespace = Some(true);
+        pod_spec.init_containers = Some(vec![
+            Container::new("init-config")
+                .image(config_manager_image)
+                .command(["/bin/config-manager", "init"])
+                .env(config_manager_env)
+                .volume_mounts([VolumeMount::new(ACL_MOUNT_PATH, &volumes.acls)]),
+        ]);
 
         StatefulSet::new(&name)
             .namespace(&namespace)
@@ -184,7 +219,7 @@ impl Headscale {
         if config["policy"] == Value::Null {
             let policy = json!({
                 "mode": "file",
-                "path": "/etc/headscale/acl.json"
+                "path": format!("{ACL_MOUNT_PATH}/acl.json"),
             });
             config["policy"] = policy;
         };
@@ -224,6 +259,25 @@ impl Headscale {
                 "acl.json",
                 serde_json::to_string(&serde_json::json!({})).unwrap(),
             )])
+    }
+
+    pub fn config_manager_service_account_name(&self) -> String {
+        format!("headscale-{}-config-manager", self.name_unchecked())
+    }
+
+    fn render_config_manager_rbac(&self) -> ConfigManagerRbac {
+        let name = format!("headscale-{}", self.name_unchecked());
+        let namespace = self.namespace().unwrap_or_default();
+        let owner_ref = self.owner_ref(&()).unwrap_or_default();
+        let acl_configmap_name = self.acl_configmap_name();
+
+        ConfigManagerRbac::new(
+            &name,
+            &namespace,
+            &acl_configmap_name,
+            owner_ref,
+            self.common_labels(&name),
+        )
     }
 
     fn render_service(&self, ports: &Ports, selector_name: impl ToString) -> Service {
@@ -311,13 +365,16 @@ pub async fn deploy_headscale(
     let keys = headscale.render_secret();
     let config = headscale.render_configmap();
     let acls = headscale.render_acl_configmap();
-    let volumes = headscale.render_volumes(&config, &acls, &keys);
-    let stateful_set = headscale.render_stateful_set(&ports, volumes);
+    let volumes = headscale.render_volumes(&config, &keys);
+    let stateful_set =
+        headscale.render_stateful_set(&ports, volumes, &ctx.data.config_manager_image);
     let service = headscale.render_service(&ports, stateful_set.name_unchecked());
+    let rbac = headscale.render_config_manager_rbac();
 
     keys.apply_if_not_exists(client).await?;
     config.apply(client).await?;
     acls.apply_if_not_exists(client).await?;
+    rbac.apply(client, &namespace).await?;
     stateful_set.apply(client).await?;
     service.apply(client).await?;
 
@@ -350,15 +407,18 @@ pub async fn cleanup_headscale(
     let keys = headscale.render_secret();
     let config = headscale.render_configmap();
     let acls = headscale.render_acl_configmap();
-    let volumes = headscale.render_volumes(&config, &acls, &keys);
-    let stateful_set = headscale.render_stateful_set(&ports, volumes);
+    let volumes = headscale.render_volumes(&config, &keys);
+    let stateful_set =
+        headscale.render_stateful_set(&ports, volumes, &ctx.data.config_manager_image);
     let service = headscale.render_service(&ports, stateful_set.name_unchecked());
+    let rbac = headscale.render_config_manager_rbac();
 
     stateful_set.delete(client).await?;
     service.delete(client).await?;
     config.delete(client).await?;
     acls.delete(client).await?;
     keys.delete(client).await?;
+    rbac.delete(client, &namespace).await?;
 
     Ok(())
 }

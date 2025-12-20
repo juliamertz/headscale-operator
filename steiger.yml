@@ -4,6 +4,7 @@ build:
     platformStrategy: crossSystem
     packages:
       headscale-operator: headscale-operator
+      config-manager: config-manager
 
 profiles:
   local:

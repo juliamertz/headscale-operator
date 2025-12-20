@@ -56,12 +56,17 @@
           compressor = "none";
         };
 
-      headscale-operator = pkgsCross.callPackage ./package.nix {
+      headscale-operator = pkgsCross.callPackage ./headscale-operator/package.nix {
+        craneLib = craneLib;
+        inherit filter;
+      };
+      config-manager = pkgsCross.callPackage ./config-manager/package.nix {
         craneLib = craneLib;
         inherit filter;
       };
     in {
       headscale-operator = buildImage headscale-operator;
+      config-manager = buildImage config-manager;
     });
 
     devShells = nixpkgs.lib.genAttrs (import systems) (

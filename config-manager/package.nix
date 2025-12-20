@@ -5,22 +5,24 @@
   lib,
   pkg-config,
   stdenv,
-  openssl,
   libiconv,
 }:
 craneLib.buildPackage rec {
-  pname = "headscale-operator";
+  pname = "config-manager";
   version = "v0.1.0";
 
   src = filter {
-    root = ./.;
+    root = ../.;
     include = [
+      ../Cargo.toml
+      ../Cargo.lock
+      ../headscale-operator/Cargo.toml
       ./Cargo.toml
-      ./Cargo.lock
       ./src
     ];
   };
 
+  cargoExtraArgs = "-p config-manager";
   cargoVendorDir = craneLib.vendorCargoDeps {inherit src;};
 
   strictDeps = true;
@@ -28,6 +30,4 @@ craneLib.buildPackage rec {
   nativeBuildInputs =
     [pkg-config]
     ++ lib.optionals stdenv.buildPlatform.isDarwin [libiconv];
-
-  buildInputs = [openssl];
 }
