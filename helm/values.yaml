@@ -1,2 +1,7 @@
 crds:
   install: false
+
+deployment: 
+  replicas: 1
+  logLevel: debug
+  terminationGracePeriodSeconds: 15

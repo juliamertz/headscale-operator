@@ -10,7 +10,7 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: headscale-operator
-  replicas: 1
+  replicas: {{ .Values.deployment.replicas }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -24,16 +24,14 @@ spec:
         app.kubernetes.io/part-of: headscale
     spec:
       serviceAccountName: headscale-operator
-      terminationGracePeriodSeconds: 15
-      imagePullSecrets:
-      - name: github-registry
+      terminationGracePeriodSeconds: {{ .Values.deployment.terminationGracePeriodSeconds }}
       containers:
         - name: headscale-operator
           image: {{ .Values.steiger.headscaleOperator.image }}
           args: ["/bin/headscale-operator"]
           env:
             - name: RUST_LOG
-              value: "info,headscale_operator=debug"
+              value: "info,headscale_operator={{ .Values.deployment.logLevel }}"
             - name: TLS_CERT_PATH
               value: /run/secrets/tls
           imagePullPolicy: IfNotPresent
