@@ -1,3 +1,5 @@
+use serde_json::Value;
+
 use crate::helper::CmdBuilder;
 
 use super::*;
@@ -176,6 +178,20 @@ impl Headscale {
             ])
     }
 
+    fn fix_config(&self) -> Value {
+        let mut config = self.spec.config.clone();
+
+        if config["policy"] == Value::Null {
+            let policy = json!({
+                "mode": "file",
+                "path": "/etc/headscale/acl.json"
+            });
+            config["policy"] = policy;
+        };
+
+        config
+    }
+
     fn render_configmap(&self) -> ConfigMap {
         let name = format!("headscale-{}-config", self.name_unchecked());
         let namespace = self.namespace().unwrap_or_default();
@@ -187,7 +203,7 @@ impl Headscale {
             .owner(owner_ref)
             .data([(
                 "config.yaml",
-                serde_yaml::to_string(&self.spec.config).unwrap(),
+                serde_yaml::to_string(&self.fix_config()).unwrap(),
             )])
     }
 
