@@ -7,7 +7,7 @@ use kubus::admission;
 
 use crate::Error;
 
-const ANNOTATION_INJECT_SIDECAR: &str = "headscale.juliamertz.dev/inject-tailscale-sidecar";
+const ANNOTATION_INJECT_SIDECAR: &str = "headscale.juliamertz.dev/tailscale-inject-sidecar";
 const ANNOTATION_EXTRA_ARGS: &str = "headscale.juliamertz.dev/tailscale-extra-args";
 const ANNOTATION_IMAGE: &str = "headscale.juliamertz.dev/tailscale-image";
 const ANNOTATION_AUTH_SECRET: &str = "headscale.juliamertz.dev/tailscale-auth-secret";
