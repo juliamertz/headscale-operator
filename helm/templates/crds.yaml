@@ -1,0 +1,473 @@
+{{ if .Values.crds.install }}
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinitionList
+items:
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    name: headscales.headscale.juliamertz.dev
+  spec:
+    group: headscale.juliamertz.dev
+    names:
+      categories: []
+      kind: Headscale
+      plural: headscales
+      shortNames: []
+      singular: headscale
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns:
+      - jsonPath: .status.ready
+        name: Ready
+        type: boolean
+      - jsonPath: .status.message
+        name: Message
+        type: string
+      name: v1
+      schema:
+        openAPIV3Schema:
+          description: Auto-generated derived type for HeadscaleSpec via `CustomResource`
+          properties:
+            spec:
+              properties:
+                config:
+                  x-kubernetes-preserve-unknown-fields: true
+                deployment:
+                  properties:
+                    env:
+                      default: []
+                      items:
+                        description: EnvVar represents an environment variable present in a Container.
+                        properties:
+                          name:
+                            description: Name of the environment variable. May consist of any printable ASCII characters except '='.
+                            type: string
+                          value:
+                            description: 'Variable references $(VAR_NAME) are expanded using the previously defined environment variables in the container and any service environment variables. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless of whether the variable exists or not. Defaults to "".'
+                            type: string
+                          valueFrom:
+                            description: Source for the environment variable's value. Cannot be used if value is not empty.
+                            properties:
+                              configMapKeyRef:
+                                description: Selects a key of a ConfigMap.
+                                properties:
+                                  key:
+                                    description: The key to select.
+                                    type: string
+                                  name:
+                                    description: 'Name of the referent. This field is effectively required, but due to backwards compatibility is allowed to be empty. Instances of this type with an empty value here are almost certainly wrong. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                    type: string
+                                  optional:
+                                    description: Specify whether the ConfigMap or its key must be defined
+                                    type: boolean
+                                required:
+                                - key
+                                - name
+                                type: object
+                              fieldRef:
+                                description: 'Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels[''<KEY>'']`, `metadata.annotations[''<KEY>'']`, spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.'
+                                properties:
+                                  apiVersion:
+                                    description: Version of the schema the FieldPath is written in terms of, defaults to "v1".
+                                    type: string
+                                  fieldPath:
+                                    description: Path of the field to select in the specified API version.
+                                    type: string
+                                required:
+                                - fieldPath
+                                type: object
+                              fileKeyRef:
+                                description: FileKeyRef selects a key of the env file. Requires the EnvFiles feature gate to be enabled.
+                                properties:
+                                  key:
+                                    description: The key within the env file. An invalid key will prevent the pod from starting. The keys defined within a source may consist of any printable ASCII characters except '='. During Alpha stage of the EnvFiles feature gate, the key size is limited to 128 characters.
+                                    type: string
+                                  optional:
+                                    description: |-
+                                      Specify whether the file or its key must be defined. If the file or key does not exist, then the env var is not published. If optional is set to true and the specified key does not exist, the environment variable will not be set in the Pod's containers.
+
+                                      If optional is set to false and the specified key does not exist, an error will be returned during Pod creation.
+                                    type: boolean
+                                  path:
+                                    description: The path within the volume from which to select the file. Must be relative and may not contain the '..' path or start with '..'.
+                                    type: string
+                                  volumeName:
+                                    description: The name of the volume mount containing the env file.
+                                    type: string
+                                required:
+                                - key
+                                - path
+                                - volumeName
+                                type: object
+                              resourceFieldRef:
+                                description: 'Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.'
+                                properties:
+                                  containerName:
+                                    description: 'Container name: required for volumes, optional for env vars'
+                                    type: string
+                                  divisor:
+                                    description: Specifies the output format of the exposed resources, defaults to "1"
+                                    type: string
+                                  resource:
+                                    description: 'Required: resource to select'
+                                    type: string
+                                required:
+                                - resource
+                                type: object
+                              secretKeyRef:
+                                description: Selects a key of a secret in the pod's namespace
+                                properties:
+                                  key:
+                                    description: The key of the secret to select from.  Must be a valid secret key.
+                                    type: string
+                                  name:
+                                    description: 'Name of the referent. This field is effectively required, but due to backwards compatibility is allowed to be empty. Instances of this type with an empty value here are almost certainly wrong. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                    type: string
+                                  optional:
+                                    description: Specify whether the Secret or its key must be defined
+                                    type: boolean
+                                required:
+                                - key
+                                - name
+                                type: object
+                            type: object
+                        required:
+                        - name
+                        type: object
+                      type: array
+                    image:
+                      default: headscale/headscale:v0.27.1
+                      type: string
+                  type: object
+                tls:
+                  properties:
+                    existingSecret:
+                      nullable: true
+                      type: string
+                  type: object
+              required:
+              - config
+              - deployment
+              - tls
+              type: object
+            status:
+              nullable: true
+              properties:
+                lastUpdated:
+                  nullable: true
+                  type: string
+                message:
+                  nullable: true
+                  type: string
+                ready:
+                  type: boolean
+              required:
+              - ready
+              type: object
+          required:
+          - spec
+          title: Headscale
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    name: aclpolicies.headscale.juliamertz.dev
+  spec:
+    group: headscale.juliamertz.dev
+    names:
+      categories: []
+      kind: ACLPolicy
+      plural: aclpolicies
+      shortNames: []
+      singular: aclpolicy
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns: []
+      name: v1
+      schema:
+        openAPIV3Schema:
+          description: Auto-generated derived type for ACLPolicySpec via `CustomResource`
+          properties:
+            spec:
+              properties:
+                headscaleRef:
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      nullable: true
+                      type: string
+                  required:
+                  - name
+                  type: object
+                rules:
+                  items:
+                    properties:
+                      action:
+                        enum:
+                        - accept
+                        - deny
+                        type: string
+                      dst:
+                        items:
+                          type: string
+                        type: array
+                      src:
+                        items:
+                          type: string
+                        type: array
+                    required:
+                    - action
+                    - dst
+                    - src
+                    type: object
+                  type: array
+              required:
+              - headscaleRef
+              - rules
+              type: object
+          required:
+          - spec
+          title: ACLPolicy
+          type: object
+      served: true
+      storage: true
+      subresources: {}
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    name: preauthkeys.headscale.juliamertz.dev
+  spec:
+    group: headscale.juliamertz.dev
+    names:
+      categories: []
+      kind: PreauthKey
+      plural: preauthkeys
+      shortNames: []
+      singular: preauthkey
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns: []
+      name: v1
+      schema:
+        openAPIV3Schema:
+          description: Auto-generated derived type for PreauthKeySpec via `CustomResource`
+          properties:
+            spec:
+              properties:
+                ephemeral:
+                  default: false
+                  type: boolean
+                expiration:
+                  default: 1h
+                  type: string
+                reusable:
+                  default: false
+                  type: boolean
+                targetSecret:
+                  nullable: true
+                  type: string
+                user:
+                  default:
+                    name: ''
+                    namespace: null
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      nullable: true
+                      type: string
+                  required:
+                  - name
+                  type: object
+              type: object
+            status:
+              nullable: true
+              properties:
+                createdAt:
+                  description: serialized timestamp format that headscale uses
+                  properties:
+                    nanos:
+                      format: uint64
+                      minimum: 0.0
+                      type: integer
+                    seconds:
+                      format: uint64
+                      minimum: 0.0
+                      type: integer
+                  required:
+                  - nanos
+                  - seconds
+                  type: object
+                ephemeral:
+                  type: boolean
+                expiration:
+                  description: serialized timestamp format that headscale uses
+                  properties:
+                    nanos:
+                      format: uint64
+                      minimum: 0.0
+                      type: integer
+                    seconds:
+                      format: uint64
+                      minimum: 0.0
+                      type: integer
+                  required:
+                  - nanos
+                  - seconds
+                  type: object
+                id:
+                  format: uint32
+                  minimum: 0.0
+                  type: integer
+                reusable:
+                  type: boolean
+                user:
+                  properties:
+                    createdAt:
+                      description: serialized timestamp format that headscale uses
+                      nullable: true
+                      properties:
+                        nanos:
+                          format: uint64
+                          minimum: 0.0
+                          type: integer
+                        seconds:
+                          format: uint64
+                          minimum: 0.0
+                          type: integer
+                      required:
+                      - nanos
+                      - seconds
+                      type: object
+                    displayName:
+                      nullable: true
+                      type: string
+                    email:
+                      nullable: true
+                      type: string
+                    id:
+                      format: uint32
+                      minimum: 0.0
+                      type: integer
+                    name:
+                      type: string
+                    pictureUrl:
+                      nullable: true
+                      type: string
+                  required:
+                  - id
+                  - name
+                  type: object
+              required:
+              - createdAt
+              - ephemeral
+              - expiration
+              - id
+              - reusable
+              - user
+              type: object
+          required:
+          - spec
+          title: PreauthKey
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    name: users.headscale.juliamertz.dev
+  spec:
+    group: headscale.juliamertz.dev
+    names:
+      categories: []
+      kind: User
+      plural: users
+      shortNames: []
+      singular: user
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns: []
+      name: v1
+      schema:
+        openAPIV3Schema:
+          description: Auto-generated derived type for UserSpec via `CustomResource`
+          properties:
+            spec:
+              properties:
+                displayName:
+                  nullable: true
+                  type: string
+                email:
+                  nullable: true
+                  type: string
+                headscaleRef:
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      nullable: true
+                      type: string
+                  required:
+                  - name
+                  type: object
+                pictureUrl:
+                  nullable: true
+                  type: string
+              required:
+              - headscaleRef
+              type: object
+            status:
+              nullable: true
+              properties:
+                createdAt:
+                  description: serialized timestamp format that headscale uses
+                  nullable: true
+                  properties:
+                    nanos:
+                      format: uint64
+                      minimum: 0.0
+                      type: integer
+                    seconds:
+                      format: uint64
+                      minimum: 0.0
+                      type: integer
+                  required:
+                  - nanos
+                  - seconds
+                  type: object
+                displayName:
+                  nullable: true
+                  type: string
+                email:
+                  nullable: true
+                  type: string
+                id:
+                  format: uint32
+                  minimum: 0.0
+                  type: integer
+                name:
+                  type: string
+                pictureUrl:
+                  nullable: true
+                  type: string
+              required:
+              - id
+              - name
+              type: object
+          required:
+          - spec
+          title: User
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+metadata: {}
+{{ end }}
