@@ -9,10 +9,10 @@ use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
+pub(crate) mod admission;
 pub(crate) mod crds;
 pub(crate) mod handlers;
 pub(crate) mod helper;
-pub(crate) mod admission;
 
 use crds::*;
 
@@ -44,7 +44,7 @@ struct Cli {
     command: Option<Command>,
 
     #[arg(long, env = "TLS_CERT_PATH")]
-    tls_path: PathBuf,
+    tls_path: Option<PathBuf>,
 }
 
 #[derive(Subcommand, Default)]
@@ -73,7 +73,7 @@ async fn main() -> Result<(), Error> {
             let client = Client::try_default().await.unwrap();
             let state = State {};
 
-            Operator::builder()
+            let mut operator = Operator::builder()
                 .with_context((client, state))
                 .handler(create_user)
                 .handler(destroy_user)
@@ -83,10 +83,13 @@ async fn main() -> Result<(), Error> {
                 .handler(delete_acl_policy)
                 .handler(create_preauth_key)
                 .handler(revoke_preauth_key)
-                .with_tls_certs(opts.tls_path)
-                .mutator(admission::sidecar::mutate)
-                .run()
-                .await?
+                .mutator(admission::sidecar::mutate);
+
+            if let Some(tls_path) = opts.tls_path {
+                operator = operator.with_tls_certs(tls_path)
+            }
+
+            operator.run().await?
         }
     };
 
