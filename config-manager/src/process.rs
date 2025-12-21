@@ -2,6 +2,12 @@ use std::fs;
 use std::io;
 use std::path::PathBuf;
 
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("failed to send sighup: {0}")]
+    Sighup(#[from] nix::Error),
+}
+
 pub type Pid = i32;
 
 #[derive(Debug)]
@@ -11,11 +17,12 @@ pub struct Process {
 }
 
 impl Process {
-    pub fn sighup(&self) -> nix::Result<()> {
+    pub fn sighup(&self) -> Result<(), Error> {
         nix::sys::signal::kill(
             nix::unistd::Pid::from_raw(self.pid),
             nix::sys::signal::Signal::SIGHUP,
         )
+        .map_err(Error::Sighup)
     }
 }
 

@@ -24,6 +24,8 @@ pub enum Error {
     Json(#[from] serde_json::Error),
     #[error("io error: {0}")]
     Io(#[from] io::Error),
+    #[error("process error: {0}")]
+    Process(#[from] process::Error),
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -48,9 +50,15 @@ enum Command {
     Run,
 }
 
+struct Context {
+    opts: Opts,
+    manager: ConfigManager,
+    api: Api<ConfigMap>,
+}
+
 fn find_headscale_proc() -> io::Result<process::Process> {
     let mut processes = process::ProcessIter::try_new()?;
-    processes
+    let process = processes
         .find(|process| {
             process
                 .cmdline
@@ -61,29 +69,43 @@ fn find_headscale_proc() -> io::Result<process::Process> {
         .ok_or(io::Error::new(
             io::ErrorKind::NotFound,
             "unable to find pid for headscale",
-        ))
+        ));
+
+    if let Ok(ref process) = process {
+        debug!({ pid = process.pid, cmd = process.cmdline }, "found headscale process");
+    }
+
+    process
 }
 
-async fn init(opts: &Opts, manager: &ConfigManager, api: Api<ConfigMap>) -> Result<()> {
-    let configmap = api.get(&opts.configmap_name).await?;
+async fn init(ctx: Context) -> Result<()> {
+    let configmap = ctx.api.get(&ctx.opts.configmap_name).await?;
     let config = Config::try_from(configmap)?;
 
-    manager.write(&config.acls).await?;
+    ctx.manager.write(&config.acls).await?;
     Ok(())
 }
 
-async fn run(opts: &Opts, manager: &ConfigManager, api: Api<ConfigMap>) -> Result<()> {
-    let headscale_process = find_headscale_proc()?;
+async fn handle_event(ctx: &Context, configmap: ConfigMap) -> Result<()> {
+    let config = Config::try_from(configmap)?;
+    ctx.manager.write(&config.acls).await?;
 
+    let headscale_process = find_headscale_proc()?;
+    headscale_process.sighup()?;
+
+    info!("sent SIGHUP to headscale container");
+    Ok(())
+}
+
+async fn run(ctx: Context) -> Result<()> {
     info!("starting headscale ACL manager");
-    debug!({ pid = headscale_process.pid, cmd = headscale_process.cmdline }, "found headscale process");
 
     let watcher_config = kube::runtime::watcher::Config {
-        field_selector: Some(format!("metadata.name={}", &opts.configmap_name)),
+        field_selector: Some(format!("metadata.name={}", &ctx.opts.configmap_name)),
         page_size: Some(10),
         ..Default::default()
     };
-    let watcher = kube::runtime::watcher(api.clone(), watcher_config);
+    let watcher = kube::runtime::watcher(ctx.api.clone(), watcher_config);
     let mut stream = watcher.applied_objects().boxed();
 
     loop {
@@ -96,28 +118,10 @@ async fn run(opts: &Opts, manager: &ConfigManager, api: Api<ConfigMap>) -> Resul
         };
 
         if let Some(configmap) = event {
-            let config = match Config::try_from(configmap) {
-                Ok(config) => config,
-                Err(err) => {
-                    error!({ err = &err as &dyn StdError }, "unable to parse configmap");
-                    continue;
-                }
-            };
-
-            if let Err(err) = manager.write(&config.acls).await {
-                error!({ err = &err as &dyn StdError }, "failed to write config");
+            if let Err(err) = handle_event(&ctx, configmap).await {
+                error!({ err = &err as &dyn StdError }, "failed to handle event");
                 continue;
             };
-
-            if let Err(err) = headscale_process.sighup() {
-                error!(
-                    { err = &err as &dyn StdError },
-                    "failed to send SIGHUP to headscale container"
-                );
-                continue;
-            };
-
-            info!("sent SIGHUP to headscale container");
         } else {
             sleep(Duration::from_secs(1)).await;
         }
@@ -138,8 +142,10 @@ async fn main() -> Result<()> {
     let api: Api<ConfigMap> = Api::default_namespaced(client);
     let manager = ConfigManager::new(&opts.mount_path);
 
-    match opts.command.as_ref() {
-        Some(&Command::Init) => init(&opts, &manager, api).await,
-        _ => run(&opts, &manager, api).await,
+    let ctx = Context { opts, manager, api };
+
+    match ctx.opts.command.as_ref() {
+        Some(&Command::Init) => init(ctx).await,
+        _ => run(ctx).await,
     }
 }

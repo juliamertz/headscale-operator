@@ -1,11 +1,12 @@
-use k8s_openapi::{Resource, api::core::v1::Pod};
+use k8s_openapi::api::core::v1::Pod;
 use kube::{
-    api::{DynamicObject, GroupVersionKind},
+    api::DynamicObject,
     core::admission::{AdmissionRequest, AdmissionResponse},
 };
 use kubus::admission;
 
 use crate::Error;
+use crate::admission::{AdmissionRequestExt, ResourceGvkExt};
 
 const ANNOTATION_INJECT_SIDECAR: &str = "headscale.juliamertz.dev/tailscale-inject-sidecar";
 const ANNOTATION_EXTRA_ARGS: &str = "headscale.juliamertz.dev/tailscale-extra-args";
@@ -14,46 +15,12 @@ const ANNOTATION_AUTH_SECRET: &str = "headscale.juliamertz.dev/tailscale-auth-se
 
 const DEFAULT_TAILSCALE_IMAGE: &str = "ghcr.io/tailscale/tailscale:v1.92.4";
 
-pub trait ResourceGvkExt {
-    fn is(kind: &GroupVersionKind) -> bool;
-}
-
-impl<K: Resource> ResourceGvkExt for K {
-    fn is(kind: &GroupVersionKind) -> bool {
-        kind.group == K::GROUP && kind.version == K::VERSION && kind.kind == K::KIND
-    }
-}
-
-fn get_annotation<'a>(req: &'a AdmissionRequest<DynamicObject>, name: &str) -> Option<&'a str> {
-    req.object
-        .as_ref()
-        .and_then(|obj| obj.metadata.annotations.as_ref())
-        .and_then(|ann| ann.get(name).map(|v| v.as_str()))
-}
-
-fn should_inject_sidecar(req: &AdmissionRequest<DynamicObject>) -> bool {
+fn should_inject(req: &AdmissionRequest<DynamicObject>) -> bool {
     Pod::is(&req.kind)
-        && get_annotation(req, ANNOTATION_INJECT_SIDECAR)
+        && req
+            .get_annotation(ANNOTATION_INJECT_SIDECAR)
             .map(|v| v == "true")
             .unwrap_or(false)
-}
-
-#[admission(mutating)]
-pub async fn mutate(req: &AdmissionRequest<DynamicObject>) -> Result<AdmissionResponse, Error> {
-    if should_inject_sidecar(req) {
-        let extra_args = get_annotation(req, ANNOTATION_EXTRA_ARGS);
-        let image = get_annotation(req, ANNOTATION_IMAGE);
-        let Some(auth_secret) = get_annotation(req, ANNOTATION_AUTH_SECRET) else {
-            let reason = format!("missing required '{ANNOTATION_AUTH_SECRET}' annotation");
-            return Ok(AdmissionResponse::from(req).deny(reason));
-        };
-
-        let patch = build_sidecar_patch(extra_args, image, auth_secret)?;
-
-        Ok(AdmissionResponse::from(req).with_patch(patch).unwrap())
-    } else {
-        Ok(AdmissionResponse::from(req))
-    }
 }
 
 fn build_sidecar_patch(
@@ -113,4 +80,22 @@ fn build_sidecar_patch(
     })];
 
     Ok(json_patch::Patch(ops))
+}
+
+#[admission(mutating)]
+pub async fn mutate(req: &AdmissionRequest<DynamicObject>) -> Result<AdmissionResponse, Error> {
+    if should_inject(req) {
+        let extra_args = req.get_annotation(ANNOTATION_EXTRA_ARGS);
+        let image = req.get_annotation(ANNOTATION_IMAGE);
+        let Some(auth_secret) = req.get_annotation(ANNOTATION_AUTH_SECRET) else {
+            let reason = format!("missing required '{ANNOTATION_AUTH_SECRET}' annotation");
+            return Ok(AdmissionResponse::from(req).deny(reason));
+        };
+
+        let patch = build_sidecar_patch(extra_args, image, auth_secret)?;
+
+        Ok(AdmissionResponse::from(req).with_patch(patch).unwrap())
+    } else {
+        Ok(AdmissionResponse::from(req))
+    }
 }
