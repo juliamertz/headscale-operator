@@ -1,8 +1,10 @@
 use std::fmt::Debug;
+use std::ops::Deref;
 
 use async_trait::async_trait;
 use k8s_openapi_ext::appsv1::StatefulSet;
 use k8s_openapi_ext::corev1::Pod;
+use k8s_openapi_ext::resource::Quantity;
 use kube::api::{AttachParams, Execute, ListParams};
 use kube::core::Selector;
 use kube::{Api, Client, Resource, ResourceExt as _};
@@ -144,5 +146,34 @@ impl PodOwner for StatefulSet {
         let pods = api.list(&list_params).await?;
 
         Ok(pods.items.first().cloned())
+    }
+}
+
+#[derive(Default)]
+pub struct Resources(Vec<(String, Quantity)>);
+
+impl Deref for Resources {
+    type Target = [(String, Quantity)];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Resources {
+    pub fn cpu(mut self, quantity: impl ToString) -> Self {
+        self.0
+            .push(("cpu".to_string(), Quantity(quantity.to_string())));
+        self
+    }
+
+    pub fn mem(mut self, quantity: impl ToString) -> Self {
+        self.0
+            .push(("mem".to_string(), Quantity(quantity.to_string())));
+        self
+    }
+
+    pub fn inner(self) -> Vec<(String, Quantity)> {
+        self.0
     }
 }

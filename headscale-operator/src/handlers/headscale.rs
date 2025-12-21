@@ -1,6 +1,6 @@
 use serde_json::Value;
 
-use crate::helper::CmdBuilder;
+use crate::helper::{CmdBuilder, Resources};
 use crate::rbac::{ConfigManagerRbac, Rbac};
 
 use super::*;
@@ -162,11 +162,9 @@ impl Headscale {
                 .image(config_manager_image)
                 .command(["/bin/config-manager"])
                 .env(config_manager_env.clone())
-                .volume_mounts([VolumeMount::new(ACL_MOUNT_PATH, &volumes.acls)]),
-            // Container::new("debug")
-            //     .image("alpine:latest")
-            //     .command(["sleep", "infinity"])
-            //     .volume_mounts([VolumeMount::new(ACL_MOUNT_PATH, &volumes.acls)]),
+                .volume_mounts([VolumeMount::new(ACL_MOUNT_PATH, &volumes.acls)])
+                .resource_requests(Resources::default().cpu("10m").mem("24Mi").inner())
+                .resource_limits(Resources::default().cpu("100m").mem("48Mi").inner()),
         ])
         .volumes([
             volumes.tls,

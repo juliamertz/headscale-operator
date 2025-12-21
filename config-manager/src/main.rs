@@ -1,17 +1,16 @@
 mod config;
 mod process;
 
-use std::error::Error as StdError;
 use std::io;
 use std::path::PathBuf;
+use std::{error::Error as StdError, time::Duration};
 
 use clap::{Parser, Subcommand};
 use futures::{StreamExt, TryStreamExt};
 use k8s_openapi::api::core::v1::ConfigMap;
-use kube::{
-    Api, Client,
-    api::{WatchEvent, WatchParams},
-};
+use kube::runtime::WatchStreamExt;
+use kube::{Api, Client};
+use tokio::time::sleep;
 use tracing::{debug, error, info};
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -65,7 +64,7 @@ fn find_headscale_proc() -> io::Result<process::Process> {
         ))
 }
 
-async fn init(opts: &Opts, manager: &ConfigManager, api: &Api<ConfigMap>) -> Result<()> {
+async fn init(opts: &Opts, manager: &ConfigManager, api: Api<ConfigMap>) -> Result<()> {
     let configmap = api.get(&opts.configmap_name).await?;
     let config = Config::try_from(configmap)?;
 
@@ -73,15 +72,19 @@ async fn init(opts: &Opts, manager: &ConfigManager, api: &Api<ConfigMap>) -> Res
     Ok(())
 }
 
-async fn run(opts: &Opts, manager: &ConfigManager, api: &Api<ConfigMap>) -> Result<()> {
+async fn run(opts: &Opts, manager: &ConfigManager, api: Api<ConfigMap>) -> Result<()> {
     let headscale_process = find_headscale_proc()?;
 
     info!("starting headscale ACL manager");
     debug!({ pid = headscale_process.pid, cmd = headscale_process.cmdline }, "found headscale process");
 
-    let watch_params =
-        WatchParams::default().fields(&format!("metadata.name={}", &opts.configmap_name));
-    let mut stream = api.watch(&watch_params, "0").await?.boxed();
+    let watcher_config = kube::runtime::watcher::Config {
+        field_selector: Some(format!("metadata.name={}", &opts.configmap_name)),
+        page_size: Some(10),
+        ..Default::default()
+    };
+    let watcher = kube::runtime::watcher(api.clone(), watcher_config);
+    let mut stream = watcher.applied_objects().boxed();
 
     loop {
         let event = match stream.try_next().await {
@@ -92,7 +95,7 @@ async fn run(opts: &Opts, manager: &ConfigManager, api: &Api<ConfigMap>) -> Resu
             }
         };
 
-        if let Some(WatchEvent::Modified(configmap)) = event {
+        if let Some(configmap) = event {
             let config = match Config::try_from(configmap) {
                 Ok(config) => config,
                 Err(err) => {
@@ -115,6 +118,8 @@ async fn run(opts: &Opts, manager: &ConfigManager, api: &Api<ConfigMap>) -> Resu
             };
 
             info!("sent SIGHUP to headscale container");
+        } else {
+            sleep(Duration::from_secs(1)).await;
         }
     }
 }
@@ -134,7 +139,7 @@ async fn main() -> Result<()> {
     let manager = ConfigManager::new(&opts.mount_path);
 
     match opts.command.as_ref() {
-        Some(&Command::Init) => init(&opts, &manager, &api).await,
-        _ => run(&opts, &manager, &api).await,
+        Some(&Command::Init) => init(&opts, &manager, api).await,
+        _ => run(&opts, &manager, api).await,
     }
 }

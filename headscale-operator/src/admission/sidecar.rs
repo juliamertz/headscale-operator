@@ -102,8 +102,8 @@ fn build_sidecar_patch(
             },
         ],
         "resources": {
-            "requests": { "cpu": "10m", "memory": "64Mi" },
-            "limits": { "cpu": "100m", "memory": "128Mi" }
+            "requests": { "cpu": "100m", "memory": "64Mi" },
+            "limits": { "cpu": "200m", "memory": "128Mi" }
         }
     });
 
