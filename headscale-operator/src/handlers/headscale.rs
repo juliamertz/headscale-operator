@@ -161,7 +161,7 @@ impl Headscale {
             Container::new("config-manager")
                 .image(config_manager_image)
                 .command(["/bin/config-manager"])
-                .env(config_manager_env.clone())
+                .env(config_manager_env)
                 .volume_mounts([VolumeMount::new(ACL_MOUNT_PATH, &volumes.acls)])
                 .resource_requests(Resources::default().cpu("10m").mem("24Mi").inner())
                 .resource_limits(Resources::default().cpu("100m").mem("48Mi").inner()),

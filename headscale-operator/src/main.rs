@@ -11,9 +11,9 @@ use tracing_subscriber::util::SubscriberInitExt;
 
 pub(crate) mod admission;
 pub(crate) mod crds;
-pub(crate) mod rbac;
 pub(crate) mod handlers;
 pub(crate) mod helper;
+pub(crate) mod rbac;
 
 use crds::*;
 

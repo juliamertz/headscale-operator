@@ -20,7 +20,7 @@ pub trait ResourceGvkExt {
 
 impl<K: Resource> ResourceGvkExt for K {
     fn is(kind: &GroupVersionKind) -> bool {
-        &kind.group == K::GROUP && &kind.version == K::VERSION && &kind.kind == K::KIND
+        kind.group == K::GROUP && kind.version == K::VERSION && kind.kind == K::KIND
     }
 }
 

@@ -1,4 +1,4 @@
-use super::{Result, Error};
+use super::{Error, Result};
 
 use std::error::Error as StdError;
 use std::path::PathBuf;
@@ -20,7 +20,7 @@ impl TryFrom<ConfigMap> for Config {
         let data = configmap.data.unwrap_or_default();
         let content = data.get("acl.json").map(String::as_str).unwrap_or("{}");
 
-        let acls = match serde_json::from_str(&content) {
+        let acls = match serde_json::from_str(content) {
             Ok(value) => value,
             Err(err) => {
                 error!(

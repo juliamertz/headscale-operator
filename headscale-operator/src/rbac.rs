@@ -57,15 +57,15 @@ pub trait Rbac {
         create_or_update(
             &service_account_api,
             &service_account.name_any(),
-            &service_account,
+            service_account,
         )
         .await?;
 
         let role_api: Api<Role> = Api::namespaced(client.clone(), namespace);
-        create_or_update(&role_api, &role.name_any(), &role).await?;
+        create_or_update(&role_api, &role.name_any(), role).await?;
 
         let role_binding_api: Api<RoleBinding> = Api::namespaced(client.clone(), namespace);
-        create_or_update(&role_binding_api, &role_binding.name_any(), &role_binding).await?;
+        create_or_update(&role_binding_api, &role_binding.name_any(), role_binding).await?;
 
         Ok(())
     }
