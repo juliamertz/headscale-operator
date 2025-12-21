@@ -2,6 +2,10 @@ crds:
   install: false
 
 deployment: 
+  image: ghcr.io/juliamertz/headscale-operator/headscale-operator:098f82@sha256:ee316e13fb21bb81bf40ff2b469af8de8b258dd67075089e900471cbca03774f
   replicas: 1
   logLevel: debug
   terminationGracePeriodSeconds: 15
+
+configManager:
+  image: ghcr.io/juliamertz/headscale-operator/config-manager:098f82@sha256:4cd2193392df92ecd48d0225743e89e5afe2ec1cee83bfec6f281e52dde445f6

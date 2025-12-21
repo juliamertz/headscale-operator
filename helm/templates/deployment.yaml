@@ -27,7 +27,7 @@ spec:
       terminationGracePeriodSeconds: {{ .Values.deployment.terminationGracePeriodSeconds }}
       containers:
         - name: headscale-operator
-          image: {{ .Values.steiger.headscaleOperator.image }}
+          image: {{ if .Values.steiger}}{{ .Values.steiger.headscaleOperator.image }}{{ else }}{{ .Values.deployment.image }}{{end}}
           args: ["/bin/headscale-operator"]
           env:
             - name: RUST_LOG
@@ -35,7 +35,7 @@ spec:
             - name: TLS_CERT_PATH
               value: /run/secrets/tls
             - name: CONFIG_MANAGER_IMAGE
-              value: {{ .Values.steiger.configManager.image }}
+              value: {{ if .Values.steiger}}{{ .Values.steiger.configManager.image }}{{ else }}{{ .Values.configManager.image }}{{end}}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8443
