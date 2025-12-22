@@ -236,6 +236,7 @@ items:
                 hosts:
                   additionalProperties:
                     type: string
+                  nullable: true
                   type: object
                 tagOwners:
                   additionalProperties:
@@ -247,7 +248,6 @@ items:
               required:
               - acls
               - headscaleRef
-              - hosts
               type: object
           required:
           - spec

@@ -38,7 +38,7 @@ pub type Hosts = BTreeMap<String, Host>;
 pub struct PolicySpec {
     pub headscale_ref: HeadscaleRef,
     pub groups: Option<Groups>,
-    pub hosts: Hosts,
+    pub hosts: Option<Hosts>,
     pub tag_owners: Option<TagOwners>,
     pub acls: Vec<Acl>,
     // TODO:
@@ -51,7 +51,7 @@ pub struct PolicySpec {
 #[skip_serializing_none]
 pub struct PolicyConfig {
     pub groups: Option<Groups>,
-    pub hosts: Hosts,
+    pub hosts: Option<Hosts>,
     pub tag_owners: Option<TagOwners>,
     pub acls: Vec<Acl>,
 }

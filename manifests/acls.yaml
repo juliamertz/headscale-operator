@@ -5,7 +5,7 @@ metadata:
 spec:
   headscaleRef:
     name: example
-  rules:
+  acls:
     - action: accept
       src: ['kubernetes@']
       dst: ['homelab@:80,433']
