@@ -6,6 +6,19 @@ A Kubernetes operator for managing Headscale instances and related resources. Th
 
 The Headscale operator automates the deployment and management of Headscale, a self-hosted implementation of the Tailscale control server. It handles the creation of Headscale StatefulSets, user management, preauth key generation, ACL policy configuration, and provides a mutating admission webhook for injecting Tailscale sidecars into pods.
 
+## Installation
+
+The Headscale operator can be installed using Helm from the chart repository:
+
+```bash
+helm repo add headscale-operator https://charts.juliamertz.dev
+helm repo update
+helm install headscale-operator headscale-operator/headscale-operator \
+    --version v0.0.1 \
+    --namespace headscale-operator \
+    --create-namespace
+```
+
 ## Custom Resources
 
 The operator provides four Custom Resource Definitions:

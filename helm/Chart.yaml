@@ -3,5 +3,5 @@ name: headscale-operator
 description: Headscale Kubernetes operator Helm chart
 
 type: application
-version: 0.0.1
-appVersion: "0.0.1"
+version: v0.0.1
+appVersion: "0.1.0"

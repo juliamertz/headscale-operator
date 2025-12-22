@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: headscale-operator
+  name: {{ .Release.Name }}
   labels:
     app.kubernetes.io/name: headscale-operator
     app.kubernetes.io/part-of: headscale
@@ -23,7 +23,7 @@ spec:
         app.kubernetes.io/name: headscale-operator
         app.kubernetes.io/part-of: headscale
     spec:
-      serviceAccountName: headscale-operator
+      serviceAccountName: {{ .Release.Name }}
       terminationGracePeriodSeconds: {{ .Values.deployment.terminationGracePeriodSeconds }}
       containers:
         - name: headscale-operator
