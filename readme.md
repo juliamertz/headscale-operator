@@ -10,6 +10,9 @@ The Headscale operator automates the deployment and management of Headscale, a s
 
 The Headscale operator can be installed using Helm from the chart repository:
 
+> [!WARNING]
+> This operator is still in development and CRD's are likely to change, install at your own peril 
+
 ```bash
 helm repo add headscale-operator https://charts.juliamertz.dev
 helm repo update
