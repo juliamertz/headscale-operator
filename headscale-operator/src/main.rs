@@ -18,7 +18,7 @@ pub(crate) mod rbac;
 use crds::*;
 
 use crate::handlers::User;
-use crate::handlers::aclpolicy::{create_acl_policy, delete_acl_policy};
+use crate::handlers::policy::{create_acl_policy, delete_acl_policy};
 use crate::handlers::headscale::{cleanup_headscale, deploy_headscale};
 use crate::handlers::preauth_key::{create_preauth_key, revoke_preauth_key};
 use crate::handlers::user::{create_user, destroy_user};
@@ -73,7 +73,7 @@ async fn main() -> Result<(), Error> {
         .unwrap();
 
     match opts.command.unwrap_or_default() {
-        Command::Crd => print_crds![Headscale, ACLPolicy, PreauthKey, User],
+        Command::Crd => print_crds![Headscale, Policy, PreauthKey, User],
 
         Command::Run => {
             let client = Client::try_default().await.unwrap();

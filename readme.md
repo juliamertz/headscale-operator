@@ -29,7 +29,7 @@ The operator provides four Custom Resource Definitions:
 - **[Headscale](docs/headscale.md)**: Manages Headscale instance deployments
 - **[User](docs/user.md)**: Creates and manages users in Headscale instances
 - **[PreauthKey](docs/preauth-key.md)**: Generates authentication keys for users
-- **[ACLPolicy](docs/acl-policy.md)**: Manages access control rules
+- **[Policy](docs/acl-policy.md)**: Manages access control rules
 
 Additionally, the operator provides a **[Tailscale sidecar injection](docs/tailscale-sidecar.md)** feature via a mutating admission webhook.
 
@@ -50,4 +50,4 @@ All resources use finalizers to ensure proper cleanup:
 - Headscale: Removes StatefulSet, Service, ConfigMaps, Secrets, and RBAC resources
 - User: Destroys the user in Headscale before deletion
 - PreauthKey: Revokes the key in Headscale before deletion
-- ACLPolicy: Removes the policy from the ACL ConfigMap
+- Policy: Removes the policy from the ACL ConfigMap

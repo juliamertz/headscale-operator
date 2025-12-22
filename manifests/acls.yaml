@@ -1,5 +1,5 @@
 apiVersion: headscale.juliamertz.dev/v1
-kind: ACLPolicy
+kind: Policy
 metadata:
   name: example
 spec:

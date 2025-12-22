@@ -180,7 +180,7 @@ items:
     group: headscale.juliamertz.dev
     names:
       categories: []
-      kind: ACLPolicy
+      kind: Policy
       plural: aclpolicies
       shortNames: []
       singular: aclpolicy
@@ -190,7 +190,7 @@ items:
       name: v1
       schema:
         openAPIV3Schema:
-          description: Auto-generated derived type for ACLPolicySpec via `CustomResource`
+          description: Auto-generated derived type for PolicySpec via `CustomResource`
           properties:
             spec:
               properties:
@@ -232,7 +232,7 @@ items:
               type: object
           required:
           - spec
-          title: ACLPolicy
+          title: Policy
           type: object
       served: true
       storage: true

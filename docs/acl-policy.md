@@ -1,12 +1,12 @@
-# ACLPolicy
+# Policy
 
-The `ACLPolicy` resource defines which users can communicate with each other and on which ports. Without ACL policies, all devices in your Headscale network can reach each other. Policies let you segment your network, restrict access between teams or environments, and limit service-to-service communication to only the ports that are necessary.
+The `Policy` resource defines which users can communicate with each other and on which ports. Without ACL policies, all devices in your Headscale network can reach each other. Policies let you segment your network, restrict access between teams or environments, and limit service-to-service communication to only the ports that are necessary.
 
 ## Example
 
 ```yaml
 apiVersion: headscale.juliamertz.dev/v1
-kind: ACLPolicy
+kind: Policy
 metadata:
   name: example
 spec:

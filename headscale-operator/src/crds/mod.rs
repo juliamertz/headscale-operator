@@ -1,13 +1,14 @@
 pub use kube::CustomResource;
 pub use schemars::JsonSchema;
 pub use serde::{Deserialize, Serialize};
+pub use serde_with::skip_serializing_none;
 
-pub mod aclpolicy;
+pub mod policy;
 pub mod headscale;
 pub mod preauth_key;
 pub mod user;
 
-pub use aclpolicy::ACLPolicy;
+pub use policy::Policy;
 pub use headscale::Headscale;
 pub use preauth_key::PreauthKey;
 

@@ -1,11 +1,6 @@
 use super::*;
 
-#[derive(Serialize)]
-struct Acls<'a> {
-    acls: &'a [Rule],
-}
-
-impl ACLPolicy {
+impl Policy {
     fn common_labels(&self, name: impl ToString) -> impl Iterator<Item = (&'static str, String)> {
         let name = name.to_string();
         let manager = env!("CARGO_PKG_NAME").to_string();
@@ -25,21 +20,18 @@ impl ACLPolicy {
     fn render_configmap(&self, name: &str) -> Result<ConfigMap, Error> {
         let namespace = self.namespace().unwrap();
         let owner_ref = self.owner_ref(&()).unwrap();
-
-        let acls = Acls {
-            acls: &self.spec.rules,
-        };
+        let config = PolicyConfig::from(self.spec.clone());
 
         Ok(ConfigMap::new(name)
             .namespace(&namespace)
             .labels(self.common_labels(name))
             .owner(owner_ref.clone())
-            .data([("acl.json", serde_json::to_string(&acls)?)]))
+            .data([("acl.json", serde_json::to_string(&config)?)]))
     }
 }
 
 #[kubus(event = Apply, finalizer = "headscale.juliamertz.dev/acl-policy-finalizer")]
-async fn create_acl_policy(policy: Arc<ACLPolicy>, ctx: Arc<Context<State>>) -> Result<(), Error> {
+async fn create_acl_policy(policy: Arc<Policy>, ctx: Arc<Context<State>>) -> Result<(), Error> {
     let client = ctx.client.clone();
     let namespace = policy.namespace().unwrap_or_default();
 
@@ -56,7 +48,7 @@ async fn create_acl_policy(policy: Arc<ACLPolicy>, ctx: Arc<Context<State>>) -> 
 }
 
 #[kubus(event = Delete, finalizer = "headscale.juliamertz.dev/acl-policy-finalizer")]
-async fn delete_acl_policy(policy: Arc<ACLPolicy>, ctx: Arc<Context<State>>) -> Result<(), Error> {
+async fn delete_acl_policy(policy: Arc<Policy>, ctx: Arc<Context<State>>) -> Result<(), Error> {
     let client = ctx.client.clone();
     let name = policy.name_any();
     let namespace = policy.namespace().unwrap();
