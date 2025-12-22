@@ -25,6 +25,6 @@ The operator provides four Custom Resource Definitions:
 - **[Headscale](docs/headscale.md)**: Manages Headscale instance deployments
 - **[User](docs/user.md)**: Creates and manages users in Headscale instances
 - **[PreauthKey](docs/preauth-key.md)**: Generates authentication keys for users
-- **[Policy](docs/acl-policy.md)**: Manages access control rules
+- **[Policy](docs/policy.md)**: Manages access control rules
 
 Additionally, the operator provides a **[Tailscale sidecar injection](docs/tailscale-sidecar.md)** feature via a mutating admission webhook.
