@@ -169,7 +169,7 @@ impl Resources {
 
     pub fn mem(mut self, quantity: impl ToString) -> Self {
         self.0
-            .push(("mem".to_string(), Quantity(quantity.to_string())));
+            .push(("memory".to_string(), Quantity(quantity.to_string())));
         self
     }
 
