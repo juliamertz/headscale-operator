@@ -5,7 +5,7 @@ The `Headscale` resource deploys a Headscale control server in your Kubernetes c
 ## Example
 
 ```yaml
-apiVersion: headscale.juliamertz.dev/v1
+apiVersion: headscale.juliamertz.dev/v1alpha1
 kind: Headscale
 metadata:
   name: example

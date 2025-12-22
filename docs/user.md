@@ -5,7 +5,7 @@ The `User` resource creates an identity in your Headscale network. Users serve a
 ## Example
 
 ```yaml
-apiVersion: headscale.juliamertz.dev/v1
+apiVersion: headscale.juliamertz.dev/v1alpha1
 kind: User
 metadata:
   name: kubernetes

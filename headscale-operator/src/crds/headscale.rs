@@ -22,7 +22,7 @@ pub struct TLSOptions {
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(
     group = "headscale.juliamertz.dev",
-    version = "v1",
+    version = "v1alpha1",
     kind = "Headscale",
     namespaced
 )]

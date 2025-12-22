@@ -5,7 +5,7 @@ The `Policy` resource defines which users can communicate with each other and on
 ## Example
 
 ```yaml
-apiVersion: headscale.juliamertz.dev/v1
+apiVersion: headscale.juliamertz.dev/v1alpha1
 kind: Policy
 metadata:
   name: example

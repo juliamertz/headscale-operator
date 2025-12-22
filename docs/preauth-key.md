@@ -5,7 +5,7 @@ The `PreauthKey` resource generates authentication keys that allow devices to jo
 ## Example
 
 ```yaml
-apiVersion: headscale.juliamertz.dev/v1
+apiVersion: headscale.juliamertz.dev/v1alpha1
 kind: PreauthKey
 metadata:
   name: example
