@@ -2,7 +2,7 @@
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: headscale-webhook
+  name: {{ .Release.Name }}-webhook
   labels:
     app.kubernetes.io/name: headscale-operator
     app.kubernetes.io/part-of: headscale
@@ -20,12 +20,6 @@ webhooks:
         namespace: {{ .Release.Namespace }}
         path: /mutate
     rules:
-      - apiGroups: [""]
-        apiVersions: ["v1"]
-        operations:
-          - CREATE
-        resources: 
-          - pods
       - apiGroups: ["headscale.juliamertz.dev"]
         apiVersions: ["v1alpha1"]
         operations:
@@ -33,3 +27,20 @@ webhooks:
           - UPDATE
         resources: 
           - headscales
+  - name: sidecar.headscale.juliamertz.dev
+    failurePolicy: Ignore
+    admissionReviewVersions: ["v1"]
+    sideEffects: None
+    timeoutSeconds: 5
+    clientConfig:
+      service:
+        name: {{ .Release.Name }}-webhook
+        namespace: {{ .Release.Namespace }}
+        path: /mutate
+    rules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations:
+          - CREATE
+        resources: 
+          - pods

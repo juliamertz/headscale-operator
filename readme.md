@@ -15,7 +15,8 @@ helm repo update
 helm install headscale-operator headscale-operator/headscale-operator \
     --version v0.0.1 \
     --namespace headscale-operator \
-    --create-namespace
+    --create-namespace \
+    --set crds.install=true
 ```
 
 ## Custom Resources
