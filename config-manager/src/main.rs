@@ -82,18 +82,19 @@ async fn init(ctx: Context) -> Result<()> {
     let configmap = ctx.api.get(&ctx.opts.configmap_name).await?;
     let config = Config::try_from(configmap)?;
 
-    ctx.manager.write(&config.acls).await?;
+    ctx.manager.sync(&config.acls).await?;
     Ok(())
 }
 
 async fn handle_event(ctx: &Context, configmap: ConfigMap) -> Result<()> {
     let config = Config::try_from(configmap)?;
-    ctx.manager.write(&config.acls).await?;
+    let changed = ctx.manager.sync(&config.acls).await?;
 
-    let headscale_process = find_headscale_proc()?;
-    headscale_process.sighup()?;
-
-    info!("sent SIGHUP to headscale container");
+    if changed {
+        let headscale_process = find_headscale_proc()?;
+        headscale_process.sighup()?;
+        info!("sent SIGHUP to headscale container");
+    }
     Ok(())
 }
 

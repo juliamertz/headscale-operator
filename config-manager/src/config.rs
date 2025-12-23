@@ -1,10 +1,9 @@
 use super::{Error, Result};
 
-use std::error::Error as StdError;
 use std::path::PathBuf;
+use std::{error::Error as StdError, path::Path};
 
 use k8s_openapi::api::core::v1::ConfigMap;
-use serde::Serialize;
 use serde_json::Value;
 use tokio::fs;
 use tracing::{debug, error};
@@ -47,11 +46,43 @@ impl ConfigManager {
         Self { mount_path }
     }
 
-    pub async fn write<D: Serialize>(&self, data: &D) -> Result<()> {
-        let path = self.mount_path.join(Self::ACL_FILENAME);
-        let content = serde_json::to_vec(data)?;
+    async fn changed(&self, path: &Path, value: &Value) -> Result<bool> {
+        if !path.exists() {
+            return Ok(true);
+        }
+
+        let content = fs::read_to_string(path).await?;
+        let current: Value = serde_json::from_str(&content)?;
+
+        if value == &current {
+            return Ok(false);
+        }
+
+        Ok(true)
+    }
+
+    pub async fn write(&self, path: &Path, value: &Value) -> Result<()> {
+        let content = serde_json::to_vec(value)?;
         fs::write(&path, &content).await?;
         debug!("written {} bytes to {path:?}", content.len());
         Ok(())
+    }
+
+    pub async fn sync(&self, value: &Value) -> Result<bool> {
+        let path = self.mount_path.join(Self::ACL_FILENAME);
+
+        let changed = self.changed(&path, value).await.unwrap_or_else(|err| {
+            error!(
+                { err = &err as &dyn StdError },
+                "failed to check for configuration changes"
+            );
+            true
+        });
+
+        if changed {
+            self.write(&path, value).await?;
+        }
+
+        Ok(changed)
     }
 }
