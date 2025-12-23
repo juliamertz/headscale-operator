@@ -8,7 +8,7 @@ rules:
       - headscale.juliamertz.dev
     resources:
       - headscales
-      - aclpolicies
+      - policies
       - users
       - preauthkeys
     verbs:
@@ -24,7 +24,7 @@ rules:
       - headscale.juliamertz.dev
     resources:
       - headscales/status
-      - aclpolicies/status
+      - policies/status
       - users/status
       - preauthkeys/status
     verbs:
@@ -36,7 +36,7 @@ rules:
       - headscale.juliamertz.dev
     resources:
       - headscales/finalizers
-      - aclpolicies/finalizers
+      - policies/finalizers
       - users/finalizers
       - preauthkeys/finalizers
     verbs:
