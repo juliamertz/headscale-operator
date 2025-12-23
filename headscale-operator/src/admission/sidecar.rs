@@ -2,8 +2,6 @@ use super::*;
 
 use k8s_openapi::api::core::v1::Pod;
 
-use crate::admission::{AdmissionRequestExt, ResourceGvkExt};
-
 const ANNOTATION_INJECT_SIDECAR: &str = "headscale.juliamertz.dev/tailscale-inject-sidecar";
 const ANNOTATION_EXTRA_ARGS: &str = "headscale.juliamertz.dev/tailscale-extra-args";
 const ANNOTATION_IMAGE: &str = "headscale.juliamertz.dev/tailscale-image";

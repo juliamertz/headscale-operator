@@ -18,8 +18,8 @@ pub(crate) mod rbac;
 use crds::*;
 
 use crate::handlers::User;
-use crate::handlers::policy::{create_acl_policy, delete_acl_policy};
 use crate::handlers::headscale::{cleanup_headscale, deploy_headscale};
+use crate::handlers::policy::{create_acl_policy, delete_acl_policy};
 use crate::handlers::preauth_key::{create_preauth_key, revoke_preauth_key};
 use crate::handlers::user::{create_user, destroy_user};
 
@@ -46,26 +46,22 @@ pub enum Error {
 #[command(about = "Kubernetes operator for the Headscale VPN")]
 struct Opts {
     #[command(subcommand)]
-    command: Option<Command>,
-
-    #[arg(long, env = "TLS_CERT_PATH")]
-    tls_path: Option<PathBuf>,
-
-    #[arg(long, env = "CONFIG_MANAGER_IMAGE")]
-    config_manager_image: String,
+    command: Command,
 }
 
-#[derive(Subcommand, Default)]
+#[derive(Subcommand)]
 enum Command {
     Crd,
-    #[default]
-    Run,
+    Run {
+        #[arg(long, env = "TLS_CERT_PATH")]
+        tls_path: Option<PathBuf>,
+
+        #[arg(env = "CONFIG_MANAGER_IMAGE")]
+        config_manager_image: String,
+    },
 }
 
-#[derive(Debug, Clone)]
-pub struct State {
-    config_manager_image: String,
-}
+pub type State = ();
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -76,17 +72,13 @@ async fn main() -> Result<(), Error> {
         .try_init()
         .unwrap();
 
-    match opts.command.unwrap_or_default() {
+    match opts.command {
         Command::Crd => print_crds![Headscale, Policy, PreauthKey, User],
 
-        Command::Run => {
+        Command::Run { tls_path, .. } => {
             let client = Client::try_default().await.unwrap();
-            let state = State {
-                config_manager_image: opts.config_manager_image,
-            };
-
             let mut operator = Operator::builder()
-                .with_context((client, state))
+                .with_context((client, ()))
                 .handler(create_user)
                 .handler(destroy_user)
                 .handler(deploy_headscale)
@@ -95,9 +87,10 @@ async fn main() -> Result<(), Error> {
                 .handler(delete_acl_policy)
                 .handler(create_preauth_key)
                 .handler(revoke_preauth_key)
+                .mutator(admission::headscale::mutate)
                 .mutator(admission::sidecar::mutate);
 
-            if let Some(tls_path) = opts.tls_path {
+            if let Some(tls_path) = tls_path {
                 operator = operator.with_tls_certs(tls_path)
             }
 

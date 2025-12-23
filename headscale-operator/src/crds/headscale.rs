@@ -1,7 +1,18 @@
+use k8s_openapi::NamespaceResourceScope;
+
 use super::*;
 
-fn default_headscale_image() -> String {
+fn expect_env(name: &str) -> String {
+    std::env::var(name).unwrap_or_else(|err| {
+        panic!("expected environment variable {name} to be set, error: {err}")
+    })
+}
+
+pub fn default_headscale_image() -> String {
     "headscale/headscale:v0.27.1@sha256:cd37b30018575fd62f18419138d4e526bcf894e1d4e1aa1b08699cec1891ac23".to_string()
+}
+pub fn default_config_manager_image() -> String {
+    expect_env("CONFIG_MANAGER_IMAGE")
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
@@ -11,6 +22,13 @@ pub struct HeadscaleDeploymentOptions {
     pub image: String,
     #[serde(default)]
     pub env: Vec<k8s_openapi_ext::corev1::EnvVar>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
+#[serde(default, rename_all = "camelCase")]
+pub struct ConfigManagerOptions {
+    #[serde(default = "default_config_manager_image")]
+    pub image: String,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
@@ -36,6 +54,8 @@ pub struct HeadscaleSpec {
     #[schemars(schema_with = "preserve_unknown_fields")]
     pub config: serde_json::Value,
     pub deployment: HeadscaleDeploymentOptions,
+    #[serde(default)]
+    pub config_manager: ConfigManagerOptions,
     pub tls: TLSOptions,
 }
 
@@ -51,4 +71,13 @@ pub struct HeadscaleStatus {
 pub struct HeadscaleRef {
     pub name: String,
     pub namespace: Option<String>,
+}
+
+impl k8s_openapi::Resource for Headscale {
+    const API_VERSION: &'static str = "headscale.juliamertz.dev/v1alpha1";
+    const GROUP: &'static str = "headscale.juliamertz.dev";
+    const KIND: &'static str = "Headscale";
+    const VERSION: &'static str = "v1alpha1";
+    const URL_PATH_SEGMENT: &'static str = "headscales";
+    type Scope = NamespaceResourceScope;
 }

@@ -26,3 +26,10 @@ webhooks:
           - CREATE
         resources: 
           - pods
+      - apiGroups: ["headscale.juliamertz.dev"]
+        apiVersions: ["v1alpha1"]
+        operations:
+          - CREATE
+          - UPDATE
+        resources: 
+          - headscales

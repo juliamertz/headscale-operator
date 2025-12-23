@@ -28,7 +28,7 @@ spec:
       containers:
         - name: headscale-operator
           image: {{ if .Values.steiger}}{{ .Values.steiger.headscaleOperator.image }}{{ else }}{{ .Values.deployment.image }}{{end}}
-          args: ["/bin/headscale-operator"]
+          args: ["/bin/headscale-operator", "run"]
           env:
             - name: RUST_LOG
               value: "info,headscale_operator={{ .Values.deployment.logLevel }}"
