@@ -6,11 +6,11 @@ use kube::{
 pub mod sidecar;
 
 pub trait AdmissionRequestExt {
-    fn get_annotation<'a>(&'a self, name: impl AsRef<str>) -> Option<&'a str>;
+    fn get_annotation(&self, name: impl AsRef<str>) -> Option<&str>;
 }
 
 impl AdmissionRequestExt for AdmissionRequest<DynamicObject> {
-    fn get_annotation<'a>(&'a self, name: impl AsRef<str>) -> Option<&'a str> {
+    fn get_annotation(&self, name: impl AsRef<str>) -> Option<&str> {
         self.object
             .as_ref()
             .and_then(|obj| obj.metadata.annotations.as_ref())
