@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+VERSION=$1
+
+REPO=ghcr.io/juliamertz/headscale-operator
+OUTPUT_DIR="$(mktemp -d)"
+
+ARM64_OUTPUT="$OUTPUT_DIR/arm64.json"
+AMD64_OUTPUT="$OUTPUT_DIR/amd64.json"
+
+if [[ -z "$VERSION" ]]; then
+  echo "Missing first positional argument 'version'"
+  exit 1
+fi
+
+build() {
+  local arch=$1
+  local output_file=$2
+  steiger build --repo="$REPO" --output-file="$output_file" --platform="linux/$arch"
+}
+
+build amd64 "$AMD64_OUTPUT" &
+build arm64 "$ARM64_OUTPUT" &
+wait
+
+cat "$ARM64_OUTPUT" "$AMD64_OUTPUT" | jq
+
+IMAGE_NAMES=$(jq -r '.builds[].imageName' "$ARM64_OUTPUT")
+
+for name in $IMAGE_NAMES; do
+  ARM64_REF=$(jq -r --arg name "$name" '.builds[] | select(.imageName == $name) | .tag' "$ARM64_OUTPUT")
+  AMD64_REF=$(jq -r --arg name "$name" '.builds[] | select(.imageName == $name) | .tag' "$AMD64_OUTPUT")
+
+  BASE_TAG=$(echo "$ARM64_REF" | cut -d'@' -f1)
+  IMAGE_NAME=$(echo "$BASE_TAG" | cut -d':' -f1)
+
+  crane mutate "$AMD64_REF" --set-platform "linux/amd64" -t "$BASE_TAG-amd64" 
+  crane mutate "$ARM64_REF" --set-platform "linux/arm64" -t "$BASE_TAG-arm64" 
+
+  crane index append \
+    --manifest "$BASE_TAG-amd64"  \
+    --manifest "$BASE_TAG-arm64" \
+    --tag "$IMAGE_NAME:$VERSION"
+done

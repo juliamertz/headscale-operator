@@ -75,18 +75,18 @@
         craneLib = mkCraneLib pkgs;
       in {
         default = craneLib.devShell {
-          packages = with pkgs; (let
+          packages = let
             toolchain = pkgs.rust-bin.stable.latest.default.override {
               extensions = ["rust-src" "rustfmt"];
             };
-          in
-            with pkgs;
-            with toolchain; [
-              rust-analyzer
-              clippy
-              nix-eval-jobs
-              steiger.packages.${system}.default
-            ]);
+          in [
+            steiger.packages.${system}.default
+            toolchain
+            pkgs.rust-analyzer
+            pkgs.clippy
+            pkgs.nix-eval-jobs
+            pkgs.crane
+          ];
 
           RUST_LOG = "info,headscale_operator=debug";
         };
