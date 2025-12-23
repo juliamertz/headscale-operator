@@ -91,6 +91,7 @@ where
         T: Into<String>,
     {
         let attach_params = AttachParams::default()
+            .container("headscale")
             .stdin(false)
             .stdout(true)
             .stderr(true);
