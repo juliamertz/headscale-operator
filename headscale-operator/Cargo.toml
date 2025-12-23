@@ -9,7 +9,7 @@ path = "src/main.rs"
 
 [dependencies]
 kube = { workspace = true }
-kubus = { version = "0.5.2" }
+kubus = { version = "0.5.3" }
 k8s-openapi = { workspace = true }
 k8s-openapi-ext = "0.26.7"
 schemars = { version = "1.0.4", features = ["raw_value"] }
