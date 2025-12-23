@@ -35,6 +35,10 @@ pub enum Error {
     Json(#[from] serde_json::Error),
     #[error("anyhow: {0}")]
     Anyhow(#[from] anyhow::Error),
+    #[error("failed to Seserialize patch: {0}")]
+    SerializePatch(#[from] kube::core::admission::SerializePatchError),
+    #[error("invalid json pointer: {0}")]
+    JsonPtr(#[from] json_patch::jsonptr::ParseError),
 }
 
 #[derive(Parser)]

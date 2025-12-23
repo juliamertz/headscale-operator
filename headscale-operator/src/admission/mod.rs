@@ -1,8 +1,11 @@
-use kube::{
-    api::{DynamicObject, GroupVersionKind},
-    core::admission::AdmissionRequest,
-};
+pub use json_patch::Patch as JsonPatch;
+pub use json_patch::{AddOperation, PatchOperation, ReplaceOperation, TestOperation};
+pub use kube::api::{DynamicObject, GroupVersionKind};
+pub use kube::core::admission::{AdmissionRequest, AdmissionResponse};
+pub use kubus::admission;
+pub use crate::Error;
 
+pub mod headscale;
 pub mod sidecar;
 
 pub trait AdmissionRequestExt {

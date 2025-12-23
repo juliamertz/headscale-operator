@@ -1,11 +1,7 @@
-use k8s_openapi::api::core::v1::Pod;
-use kube::{
-    api::DynamicObject,
-    core::admission::{AdmissionRequest, AdmissionResponse},
-};
-use kubus::admission;
+use super::*;
 
-use crate::Error;
+use k8s_openapi::api::core::v1::Pod;
+
 use crate::admission::{AdmissionRequestExt, ResourceGvkExt};
 
 const ANNOTATION_INJECT_SIDECAR: &str = "headscale.juliamertz.dev/tailscale-inject-sidecar";
@@ -27,7 +23,7 @@ fn build_sidecar_patch(
     extra_args: Option<&str>,
     image: Option<&str>,
     auth_secret: &str,
-) -> Result<json_patch::Patch, Error> {
+) -> Result<JsonPatch, Error> {
     let container = serde_json::json!({
         "name": "tailscale-sidecar",
         "image": image.unwrap_or(DEFAULT_TAILSCALE_IMAGE),
@@ -74,12 +70,10 @@ fn build_sidecar_patch(
         }
     });
 
-    let ops = vec![json_patch::PatchOperation::Add(json_patch::AddOperation {
-        path: "/spec/containers/-".parse().unwrap(),
+    Ok(JsonPatch(vec![PatchOperation::Add(AddOperation {
+        path: "/spec/containers/-".parse()?,
         value: container,
-    })];
-
-    Ok(json_patch::Patch(ops))
+    })]))
 }
 
 #[admission(mutating)]
@@ -94,7 +88,7 @@ pub async fn mutate(req: &AdmissionRequest<DynamicObject>) -> Result<AdmissionRe
 
         let patch = build_sidecar_patch(extra_args, image, auth_secret)?;
 
-        Ok(AdmissionResponse::from(req).with_patch(patch).unwrap())
+        Ok(AdmissionResponse::from(req).with_patch(patch)?)
     } else {
         Ok(AdmissionResponse::from(req))
     }
