@@ -17,4 +17,4 @@ spec:
     name: selfsigned-issuer
     kind: Issuer
   dnsNames:
-  - "headscale-webhook.{{ .Release.Namespace }}.svc"
+  - "{{ .Release.Name }}-webhook.{{ .Release.Namespace }}.svc"

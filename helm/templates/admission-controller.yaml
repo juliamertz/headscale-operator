@@ -9,14 +9,14 @@ metadata:
   annotations:
     cert-manager.io/inject-ca-from: "{{ .Release.Namespace }}/webhook-cert"
 webhooks:
-  - name: webhook.example.com
-    failurePolicy: Ignore
+  - name: headscale.juliamertz.dev
+    failurePolicy: Fail
     admissionReviewVersions: ["v1"]
     sideEffects: None
     timeoutSeconds: 5
     clientConfig:
       service:
-        name: headscale-webhook
+        name: {{ .Release.Name }}-webhook
         namespace: {{ .Release.Namespace }}
         path: /mutate
     rules:
