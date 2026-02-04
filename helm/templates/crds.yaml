@@ -144,7 +144,7 @@ items:
                         type: object
                       type: array
                     image:
-                      default: ghcr.io/headscale/headscale:v0.27.1@sha256:cd37b30018575fd62f18419138d4e526bcf894e1d4e1aa1b08699cec1891ac23
+                      default: ghcr.io/headscale/headscale:v0.28.0@sha256:cd37b30018575fd62f18419138d4e526bcf894e1d4e1aa1b08699cec1891ac23
                       type: string
                   type: object
                 tls:

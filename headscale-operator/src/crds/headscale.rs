@@ -9,7 +9,7 @@ fn expect_env(name: &str) -> String {
 }
 
 pub fn default_headscale_image() -> String {
-    "headscale/headscale:v0.27.1@sha256:cd37b30018575fd62f18419138d4e526bcf894e1d4e1aa1b08699cec1891ac23".to_string()
+    "ghcr.io/headscale/headscale:v0.28.0@sha256:51b1b9182bb6219e97374fa89af6b9320d6f87ecc739e328d5357ea4fa7a5ce3".to_string()
 }
 pub fn default_config_manager_image() -> String {
     expect_env("CONFIG_MANAGER_IMAGE")
