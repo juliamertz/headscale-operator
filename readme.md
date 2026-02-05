@@ -13,7 +13,7 @@ The Headscale operator can be installed using Helm from the chart repository:
 helm repo add headscale-operator https://charts.juliamertz.dev
 helm repo update
 helm install headscale-operator headscale-operator/headscale-operator \
-    --version v0.0.1 \
+    --version v0.0.2 \
     --namespace headscale-operator \
     --create-namespace \
     --set crds.install=true
