@@ -343,6 +343,30 @@ impl Headscale {
 
         Ok(output)
     }
+
+    pub async fn get_version(&self, client: &Client) -> Result<String, Error> {
+        #[derive(Deserialize)]
+        struct Output {
+            version: String,
+        }
+
+        let stdout = self.exec(client, ["version"]).await?;
+        let output: Output = serde_json::from_str(&stdout)?;
+
+        if let Some((version, _)) = output.version.split_once("+") {
+            return Ok(version.to_string());
+        }
+
+        Ok(output
+            .version
+            .as_str()
+            .split_once("+")
+            .map(|(version, _)| version)
+            .unwrap_or(&output.version)
+            .strip_prefix("v")
+            .context("invalid version string")?
+            .to_string())
+    }
 }
 
 #[kubus(event = Apply, finalizer = "headscale.juliamertz.dev/headscale-finalizer")]

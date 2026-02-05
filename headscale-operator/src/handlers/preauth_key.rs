@@ -1,3 +1,5 @@
+use version_compare::Version;
+
 use crate::helper::CmdBuilder;
 
 use super::*;
@@ -70,7 +72,7 @@ impl PreauthKey {
         Ok(authkey)
     }
 
-    async fn revoke_key(&self, client: Client, key: &str) -> Result<(), Error> {
+    async fn revoke(&self, client: Client, key: &str) -> Result<(), Error> {
         let namespace = self.namespace().unwrap();
         let user = self.spec.user.resolve(client.clone(), &namespace).await?;
         let user_id = user.id().context("user is missing an id")?;
@@ -81,28 +83,33 @@ impl PreauthKey {
             .resolve(client.clone(), &user.namespace_any())
             .await?;
 
-        let api: Api<StatefulSet> = Api::namespaced(client.clone(), &headscale.namespace_any());
-        let stateful_set = api.get(&headscale.stateful_set_name()).await?;
-        let first_pod = stateful_set.get_pod(client.clone()).await?.unwrap();
+        let headscale_version = headscale.get_version(&client).await?;
+        let legacy_cli = Version::from(&headscale_version)
+            .context("invalid headscale version output")?
+            < Version::from("0.28.0").expect("valid version");
 
-        let cmd: Vec<String> = [
-            "headscale",
-            "preauthkeys",
-            "revoke",
-            "--user",
-            &user_id.to_string(),
-            key,
-        ]
-        .into_iter()
-        .map(Into::into)
-        .collect();
+        let cmd = if legacy_cli {
+            CmdBuilder::default()
+                .arg("preauthkeys")
+                .arg("expire")
+                .arg("--user")
+                .arg(user_id.to_string())
+                .arg(key)
+                .collect()
+        } else {
+            let status = self
+                .status
+                .as_ref()
+                .context("cannot expire key without status")?;
+            CmdBuilder::default()
+                .arg("preauthkeys")
+                .arg("expire")
+                .arg("--id")
+                .arg(status.id.to_string())
+                .collect()
+        };
 
-        let api = Api::<Pod>::namespaced(client.clone(), &stateful_set.namespace_any());
-        let pod_name = first_pod.name_unchecked();
-
-        api.exec_with_output(&pod_name, cmd)
-            .await
-            .map_err(|stderr| anyhow!("error revoking preauth key: {stderr}"))?;
+        let _ = headscale.exec(&client, cmd).await?;
 
         Ok(())
     }
@@ -190,7 +197,7 @@ async fn revoke_preauth_key(
         .unwrap()
         .unwrap();
 
-    resource.revoke_key(client.clone(), &preauth_key).await?;
+    resource.revoke(client.clone(), &preauth_key).await?;
 
     Secret::new(secret_name)
         .namespace(namespace)

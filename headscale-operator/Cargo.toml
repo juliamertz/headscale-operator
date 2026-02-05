@@ -27,3 +27,4 @@ anyhow = { workspace = true }
 thiserror = { workspace = true }
 async-trait = "0.1.89"
 json-patch = "4.1.0"
+version-compare = "0.2.1"
