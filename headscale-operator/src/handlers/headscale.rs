@@ -278,7 +278,6 @@ impl Headscale {
         let namespace = self.namespace().unwrap();
         let owner_ref = self.owner_ref(&()).unwrap_or_default();
 
-
         <k8s_openapi_ext::corev1::Service as k8s_openapi_ext::ServiceExt>::cluster_ip(
             &name,
             [

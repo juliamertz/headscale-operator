@@ -51,9 +51,7 @@ impl Iterator for ProcessIter {
     type Item = Process;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let Some(pid) = self.pids.get(self.pos).copied() else {
-            return None;
-        };
+        let pid = self.pids.get(self.pos).copied()?;
 
         self.pos += 1;
 

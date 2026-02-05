@@ -18,5 +18,5 @@ pub(super) use serde::Deserialize;
 pub(super) use serde_json::json;
 
 pub(super) use crate::crds::{headscale::*, policy::*, preauth_key::*, user::*};
-pub(super) use crate::helper::{ExecuteExt, PodOwner, ResourceExt as _};
+pub(super) use crate::helper::{ExecuteExt, ResourceExt as _};
 pub(super) use crate::{Error, State};

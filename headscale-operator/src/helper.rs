@@ -2,12 +2,9 @@ use std::fmt::Debug;
 use std::ops::Deref;
 
 use async_trait::async_trait;
-use k8s_openapi_ext::appsv1::StatefulSet;
-use k8s_openapi_ext::corev1::Pod;
 use k8s_openapi_ext::resource::Quantity;
-use kube::api::{AttachParams, Execute, ListParams};
-use kube::core::Selector;
-use kube::{Api, Client, Resource, ResourceExt as _};
+use kube::api::{AttachParams, Execute};
+use kube::{Api, Resource, ResourceExt as _};
 use serde::de::DeserializeOwned;
 use thiserror::Error;
 use tokio::io::AsyncReadExt;
@@ -126,27 +123,6 @@ where
                     .unwrap_or_else(|| "unknown kube response status".into()),
             )),
         }
-    }
-}
-
-#[async_trait]
-pub trait PodOwner {
-    async fn get_pod(&self, client: Client) -> kube::Result<Option<Pod>>;
-}
-
-#[async_trait]
-impl PodOwner for StatefulSet {
-    async fn get_pod(&self, client: Client) -> kube::Result<Option<Pod>> {
-        let namespace = self.namespace().unwrap_or_default();
-        let spec = self.spec.clone().unwrap_or_default();
-
-        let selector = Selector::from_iter(spec.selector.match_labels.unwrap());
-        let list_params = ListParams::default().labels_from(&selector);
-
-        let api = Api::<Pod>::namespaced(client.clone(), &namespace);
-        let pods = api.list(&list_params).await?;
-
-        Ok(pods.items.first().cloned())
     }
 }
 
