@@ -17,5 +17,5 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 clap = { workspace = true }
-nix = { version = "0.30.1", features = ["signal"] }
+nix = { version = "0.31.0", features = ["signal"] }
 futures = "0.3.31"
