@@ -1,5 +1,7 @@
 use k8s_openapi::NamespaceResourceScope;
 
+use crate::helper::IMAGES;
+
 use super::*;
 
 fn expect_env(name: &str) -> String {
@@ -9,7 +11,7 @@ fn expect_env(name: &str) -> String {
 }
 
 pub fn default_headscale_image() -> String {
-    "ghcr.io/headscale/headscale:v0.28.0@sha256:51b1b9182bb6219e97374fa89af6b9320d6f87ecc739e328d5357ea4fa7a5ce3".to_string()
+    IMAGES.headscale.to_owned()
 }
 pub fn default_config_manager_image() -> String {
     expect_env("CONFIG_MANAGER_IMAGE")

@@ -1,3 +1,5 @@
+use crate::helper::IMAGES;
+
 use super::*;
 
 use k8s_openapi::api::core::v1::Pod;
@@ -6,8 +8,6 @@ const ANNOTATION_INJECT_SIDECAR: &str = "headscale.juliamertz.dev/tailscale-inje
 const ANNOTATION_EXTRA_ARGS: &str = "headscale.juliamertz.dev/tailscale-extra-args";
 const ANNOTATION_IMAGE: &str = "headscale.juliamertz.dev/tailscale-image";
 const ANNOTATION_AUTH_SECRET: &str = "headscale.juliamertz.dev/tailscale-auth-secret";
-
-const DEFAULT_TAILSCALE_IMAGE: &str = "ghcr.io/tailscale/tailscale:v1.92.4";
 
 fn should_inject(req: &AdmissionRequest<DynamicObject>) -> bool {
     Pod::is(&req.kind)
@@ -24,7 +24,7 @@ fn build_sidecar_patch(
 ) -> Result<JsonPatch, Error> {
     let container = serde_json::json!({
         "name": "tailscale-sidecar",
-        "image": image.unwrap_or(DEFAULT_TAILSCALE_IMAGE),
+        "image": image.unwrap_or(&IMAGES.tailscale),
         "securityContext": {
             "capabilities": {
                 "add": ["NET_ADMIN"]

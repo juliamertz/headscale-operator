@@ -1,10 +1,12 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::ops::Deref;
+use std::sync::LazyLock;
 
 use async_trait::async_trait;
 use k8s_openapi_ext::resource::Quantity;
 use kube::api::{AttachParams, Execute};
 use kube::{Api, Resource, ResourceExt as _};
+use serde::Deserialize;
 use serde::de::DeserializeOwned;
 use thiserror::Error;
 use tokio::io::AsyncReadExt;
@@ -154,3 +156,54 @@ impl Resources {
         self.0
     }
 }
+
+#[derive(Debug)]
+pub struct Images {
+    pub headscale: String,
+    pub tailscale: String,
+}
+
+#[allow(clippy::borrow_interior_mutable_const)]
+pub const IMAGES: LazyLock<Images> = LazyLock::new(|| {
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct Kustomization {
+        images: Vec<Image>,
+    }
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct Image {
+        name: String,
+        new_name: String,
+        new_tag: String,
+    }
+
+    impl Display for Image {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_fmt(format_args!("{}:{}", self.new_name, self.new_tag))
+        }
+    }
+
+    let images_raw = include_str!("./kustomization.yaml");
+    let kustomization: Kustomization =
+        serde_yaml::from_str(images_raw).expect("valid images.yaml file");
+
+    let headscale = kustomization
+        .images
+        .iter()
+        .find(|img| img.name == "headscale")
+        .expect("headscale image")
+        .to_string();
+    let tailscale = kustomization
+        .images
+        .iter()
+        .find(|img| img.name == "tailscale")
+        .expect("tailscale image")
+        .to_string();
+
+    Images {
+        headscale,
+        tailscale,
+    }
+});

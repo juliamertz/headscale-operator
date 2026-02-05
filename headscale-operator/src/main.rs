@@ -1,3 +1,8 @@
+#![allow(
+    clippy::declare_interior_mutable_const,
+    clippy::borrow_interior_mutable_const
+)]
+
 use clap::{Parser, Subcommand};
 use kube::{Client, CustomResourceExt};
 use kubus::{Operator, print_crds};
