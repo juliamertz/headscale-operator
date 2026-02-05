@@ -18,7 +18,7 @@ spec:
     tls_key_path: /etc/headscale/tls/tls.key
     # ... additional Headscale configuration
   deployment:
-    image: headscale/headscale:v0.27.1
+    image: juanfont/headscale:v0.27.1
     env:
       - name: HEADSCALE_DATABASE_TYPE
         value: postgres
