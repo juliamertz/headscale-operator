@@ -11,7 +11,7 @@ path = "src/main.rs"
 kube = { workspace = true }
 kubus = { version = "0.5.3" }
 k8s-openapi = { workspace = true }
-k8s-openapi-ext = "0.26.7"
+k8s-openapi-ext = "0.27.0"
 schemars = { version = "1.0.4", features = ["raw_value"] }
 tokio = { workspace = true }
 serde = { workspace = true }
