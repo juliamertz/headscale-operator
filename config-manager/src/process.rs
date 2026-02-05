@@ -64,3 +64,7 @@ impl Iterator for ProcessIter {
         Some(Process { pid, cmdline })
     }
 }
+
+pub fn list() -> io::Result<ProcessIter> {
+    ProcessIter::try_new()
+}

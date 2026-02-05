@@ -57,8 +57,7 @@ struct Context {
 }
 
 fn find_headscale_proc() -> io::Result<process::Process> {
-    let mut processes = process::ProcessIter::try_new()?;
-    let process = processes
+    let process = process::list()?
         .find(|process| {
             process
                 .cmdline
