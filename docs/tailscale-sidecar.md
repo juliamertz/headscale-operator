@@ -25,3 +25,4 @@ spec:
 - `headscale.juliamertz.dev/tailscale-auth-secret`: Name of the Secret containing the preauth key (required)
 - `headscale.juliamertz.dev/tailscale-extra-args`: Additional arguments to pass to Tailscale (optional)
 - `headscale.juliamertz.dev/tailscale-image`: Tailscale container image (optional, defaults to `ghcr.io/tailscale/tailscale:v1.92.4`)
+- `headscale.juliamertz.dev/tailscale-resources`: Tailscale container resources (stringified json resource requirements)
