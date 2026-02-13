@@ -13,6 +13,7 @@ metadata:
     headscale.juliamertz.dev/tailscale-auth-secret: tailscale-agent-auth
     headscale.juliamertz.dev/tailscale-extra-args: --accept-routes --advertise-tags=tag:sidecar
     headscale.juliamertz.dev/tailscale-image: ghcr.io/tailscale/tailscale:v1.92.4
+    headscale.juliamertz.dev/tailscale-resources: '{"requests":{"cpu":"300m","memory":"128Mi"},"limits":{"cpu": "1000m","memory":"512Mi"}}'
 spec:
   containers:
     - name: app
