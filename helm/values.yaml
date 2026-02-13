@@ -7,9 +7,9 @@ deployment:
   terminationGracePeriodSeconds: 15
   image: 
     repository: ghcr.io/juliamertz/headscale-operator/headscale-operator
-    tag: v0.0.3
+    tag: v0.0.4
 
 configManager:
   image:
     repository: ghcr.io/juliamertz/headscale-operator/config-manager
-    tag: v0.0.3
+    tag: v0.0.4
