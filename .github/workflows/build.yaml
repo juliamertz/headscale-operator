@@ -1,0 +1,44 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  packages: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - platform: linux/amd64
+            arch: amd64
+          - platform: linux/arm64
+            arch: arm64
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+            accept-flake-config = true
+
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Load devshell
+        uses: nicknovitski/nix-develop@v1
+
+      - name: Build and push
+        run: steiger build --repo=ghcr.io/juliamertz/headscale-operator --output-file=steiger.json --platform=${{ matrix.platform }}
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: steiger-${{ matrix.arch }}
+          path: steiger.json
