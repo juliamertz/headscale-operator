@@ -30,7 +30,7 @@ jobs:
             accept-flake-config = true
 
       - name: Build and push
-        uses: brainhivenl/steiger-action@v1
+        uses: brainhivenl/steiger-action@v2
         with:
           cmd: build
           args: --repo=ghcr.io/juliamertz/headscale-operator --output-file=steiger.json --platform=${{ matrix.platform }}
