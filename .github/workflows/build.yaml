@@ -38,7 +38,7 @@ jobs:
         run: steiger build --repo=ghcr.io/juliamertz/headscale-operator --output-file=steiger.json --platform=${{ matrix.platform }}
 
       - name: Upload build output
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: steiger-${{ matrix.arch }}
           path: steiger.json
