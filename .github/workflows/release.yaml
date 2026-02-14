@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yaml
+    secrets: inherit
+
+  release:
+    name: Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+            accept-flake-config = true
+
+      - name: Load devshell
+        uses: nicknovitski/nix-develop@v1
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | crane auth login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Create multi-arch manifests
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          AMD64_OUTPUT="artifacts/steiger-amd64/steiger.json"
+          ARM64_OUTPUT="artifacts/steiger-arm64/steiger.json"
+
+          IMAGE_NAMES=$(jq -r '.builds[].imageName' "$AMD64_OUTPUT")
+
+          for name in $IMAGE_NAMES; do
+            AMD64_REF=$(jq -r --arg name "$name" '.builds[] | select(.imageName == $name) | .tag' "$AMD64_OUTPUT")
+            ARM64_REF=$(jq -r --arg name "$name" '.builds[] | select(.imageName == $name) | .tag' "$ARM64_OUTPUT")
+
+            BASE_TAG=$(echo "$AMD64_REF" | cut -d'@' -f1)
+            IMAGE_NAME=$(echo "$BASE_TAG" | cut -d':' -f1)
+
+            crane mutate "$AMD64_REF" --set-platform linux/amd64 -t "$BASE_TAG-amd64"
+            crane mutate "$ARM64_REF" --set-platform linux/arm64 -t "$BASE_TAG-arm64"
+
+            crane index append \
+              --manifest "$BASE_TAG-amd64" \
+              --manifest "$BASE_TAG-arm64" \
+              --tag "$IMAGE_NAME:$VERSION"
+          done
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
