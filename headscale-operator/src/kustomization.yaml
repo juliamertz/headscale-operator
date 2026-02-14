@@ -3,7 +3,7 @@ kind: Kustomization
 images:
 - name: tailscale
   newName: ghcr.io/tailscale/tailscale
-  newTag: v1.94.1@sha256:21df0b5a84efa35c0a507f4dd2340e1b1295683634a28968707354d5bd991d9c
+  newTag: v1.94.2@sha256:95e528798bebe75f39b10e74e7051cf51188ee615934f232ba7ad06a3390ffa1
 - name: headscale
   newName: ghcr.io/juanfont/headscale
   newTag: v0.28.0@sha256:51b1b9182bb6219e97374fa89af6b9320d6f87ecc739e328d5357ea4fa7a5ce3
