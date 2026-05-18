@@ -3,7 +3,7 @@ resolver = "3"
 members = ["config-manager","headscale-operator"]
 
 [workspace.dependencies]
-kube = { version = "2", features = ["runtime", "derive", "client", "ws"] }
+kube = { version = "3", features = ["runtime", "derive", "client", "ws"] }
 k8s-openapi = { version = "0.26.1", features = ["v1_34", "schemars"] }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
