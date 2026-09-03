@@ -21,7 +21,7 @@ serde_yaml = "0.9.34"
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 hex = "0.4.3"
-rand = "0.9.2"
+rand = "0.10.0"
 serde_with = "3.15.0"
 anyhow = { workspace = true }
 thiserror = { workspace = true }
